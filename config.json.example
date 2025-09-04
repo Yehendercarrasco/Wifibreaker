@@ -1,0 +1,70 @@
+{
+  "network_config": {
+    "target_network": "192.168.1.0/24",
+    "interface": "eth0",
+    "router_ip": "192.168.1.1",
+    "dns_servers": ["8.8.8.8", "1.1.1.1"],
+    "scan_rate": 10000,
+    "timeout": 30
+  },
+  "credentials": {
+    "wifi_password": "",
+    "default_users": ["admin", "administrator", "root", "guest", "user"],
+    "default_passwords": ["admin", "password", "123456", "root", "guest", ""],
+    "password_lists": [
+      "/usr/share/wordlists/rockyou.txt",
+      "/usr/share/wordlists/metasploit/unix_passwords.txt"
+    ]
+  },
+  "targets": {
+    "common_ports": [21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 993, 995, 1433, 3389, 5432, 5900, 8080],
+    "vulnerable_services": {
+      "smb": {"port": 445, "version": "1"},
+      "rdp": {"port": 3389},
+      "ftp": {"port": 21},
+      "ssh": {"port": 22},
+      "http": {"port": 80},
+      "https": {"port": 443}
+    }
+  },
+  "exploitation": {
+    "metasploit_path": "/usr/share/metasploit-framework",
+    "payloads": {
+      "windows": "windows/meterpreter/reverse_tcp",
+      "linux": "linux/x86/meterpreter/reverse_tcp"
+    },
+    "lhost": "",
+    "lport": 4444,
+    "remote_c2": {
+      "server": "",
+      "port": 8080,
+      "protocol": "https",
+      "auth_token": ""
+    }
+  },
+  "persistence": {
+    "backdoor_ports": [4444, 5555, 6666],
+    "scheduled_tasks": true,
+    "registry_modifications": true
+  },
+  "exfiltration": {
+    "remote_server": "",
+    "remote_user": "",
+    "remote_path": "/tmp/exfiltrated_data",
+    "compression": true,
+    "encryption": false
+  },
+  "logging": {
+    "log_level": "INFO",
+    "log_file": "pentest_automation.log",
+    "detailed_logs": true,
+    "save_screenshots": true,
+    "save_evidence": true
+  },
+  "safety": {
+    "dry_run": false,
+    "confirm_actions": true,
+    "backup_before_changes": true,
+    "max_concurrent_scans": 5
+  }
+}

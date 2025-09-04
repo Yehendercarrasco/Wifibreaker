@@ -1,0 +1,38 @@
+# Evidencia y logs
+evidence/
+*.log
+pentest_automation.log
+
+# Archivos de configuración con datos reales
+config.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Archivos temporales
+*.bak
+*.backup
+*.old
+
+# Metasploit
+.msf4/
