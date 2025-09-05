@@ -29,14 +29,24 @@ class ReconnaissanceModule:
             'services': [],
             'network_info': {},
             'routes': [],
-            'vulnerabilities': []
+            'vulnerabilities': [],
+            'public_ip': None,
+            'hosts_discovered': 0,
+            'services_discovered': 0,
+            'target_network': self.network_config.get('target_network', 'No configurada')
         }
         
         # Obtener IP del router automáticamente
         self.router_ip = self._discover_router()
         if self.router_ip:
             self.network_config['router_ip'] = self.router_ip
-            self.logger.info(f"🎯 Router descubierto: {self.router_ip}")
+            self.logging_system.log_success(f"Router descubierto: {self.router_ip}", "RECONNAISSANCE")
+        
+        # Obtener IP pública
+        self.public_ip = self._get_public_ip()
+        if self.public_ip:
+            self.results['public_ip'] = self.public_ip
+            self.logging_system.log_important(f"IP pública detectada: {self.public_ip}", "RECONNAISSANCE")
     
     def _discover_router(self) -> Optional[str]:
         """Descubrir automáticamente la IP del router"""
@@ -74,6 +84,37 @@ class ReconnaissanceModule:
             
         except Exception as e:
             self.logger.error(f"❌ Error al descubrir router: {e}")
+            return None
+    
+    def _get_public_ip(self) -> Optional[str]:
+        """Obtener la IP pública del sistema"""
+        try:
+            self.logging_system.log_progress("Obteniendo IP pública...", "RECONNAISSANCE")
+            
+            # Intentar con múltiples servicios
+            services = [
+                ['curl', '-s', 'ifconfig.me'],
+                ['curl', '-s', 'ipinfo.io/ip'],
+                ['curl', '-s', 'icanhazip.com'],
+                ['wget', '-qO-', 'ifconfig.me']
+            ]
+            
+            for service in services:
+                try:
+                    result = subprocess.run(service, capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0 and result.stdout.strip():
+                        public_ip = result.stdout.strip()
+                        # Validar que sea una IP válida
+                        if re.match(r'^\d+\.\d+\.\d+\.\d+$', public_ip):
+                            return public_ip
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                    continue
+            
+            self.logging_system.log_warning("No se pudo obtener IP pública - servicios no disponibles", "RECONNAISSANCE")
+            return None
+            
+        except Exception as e:
+            self.logging_system.log_error(f"Error obteniendo IP pública: {e}", "RECONNAISSANCE")
             return None
     
     def _run_command(self, command: List[str], timeout: int = 300) -> Dict[str, Any]:
@@ -606,11 +647,20 @@ class ReconnaissanceModule:
             end_time = time.time()
             duration = end_time - start_time
             
-            self.logger.info(f"✅ RECONOCIMIENTO COMPLETADO en {duration:.2f} segundos")
-            self.logger.info(f"📊 Resumen: {len(hosts_list)} hosts, {len(self.results['services'])} servicios")
+            # Actualizar contadores
+            self.results['hosts_discovered'] = len(hosts_list)
+            self.results['services_discovered'] = len(self.results['services'])
+            self.results['execution_time'] = duration
+            
+            # Log de finalización
+            self.logging_system.log_success(f"RECONOCIMIENTO COMPLETADO en {duration:.2f} segundos", "RECONNAISSANCE")
+            
+            # Generar y mostrar resumen de fase
+            phase_summary = self.logging_system.generate_phase_summary("RECONNAISSANCE", self.results)
+            print(f"\n{phase_summary}\n")
             
             return self.results
             
         except Exception as e:
-            self.logger.error(f"❌ Error en módulo de reconocimiento: {e}")
+            self.logging_system.log_error(f"Error en módulo de reconocimiento: {e}", "RECONNAISSANCE")
             return self.results

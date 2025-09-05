@@ -11,6 +11,19 @@ from pathlib import Path
 import threading
 from typing import Dict, Any, Optional
 
+# Códigos de colores ANSI
+class Colors:
+    GREEN = '\033[92m'      # Éxito
+    ORANGE = '\033[93m'     # No explotable/Advertencia
+    RED = '\033[91m'        # Error/Problema
+    BLUE = '\033[94m'       # Información
+    PURPLE = '\033[95m'     # Progreso
+    CYAN = '\033[96m'       # Datos importantes
+    YELLOW = '\033[93m'     # Advertencia
+    BOLD = '\033[1m'        # Negrita
+    UNDERLINE = '\033[4m'   # Subrayado
+    END = '\033[0m'         # Reset
+
 class LoggingSystem:
     """Sistema de logging avanzado con múltiples niveles y formatos"""
     
@@ -32,6 +45,11 @@ class LoggingSystem:
         # Contador de eventos
         self.event_counter = 0
         self.lock = threading.Lock()
+        
+        # Configurar logging en tiempo real
+        self.realtime_log_file = self.logs_dir / "realtime_progress.log"
+        self.realtime_handler = None
+        self._setup_realtime_logging()
     
     def _create_directories(self):
         """Crear directorios necesarios para evidencia"""
@@ -58,6 +76,81 @@ class LoggingSystem:
         structured_logger.addHandler(structured_handler)
         
         return structured_logger
+    
+    def _setup_realtime_logging(self):
+        """Configurar logging en tiempo real para evitar pérdida de progreso"""
+        try:
+            self.realtime_handler = logging.FileHandler(
+                self.realtime_log_file,
+                mode='a',
+                encoding='utf-8'
+            )
+            self.realtime_handler.setLevel(logging.INFO)
+            
+            # Formatter para tiempo real
+            realtime_formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            self.realtime_handler.setFormatter(realtime_formatter)
+            
+        except Exception as e:
+            print(f"Error configurando logging en tiempo real: {e}")
+    
+    def log_success(self, message: str, phase: str = "UNKNOWN"):
+        """Log de éxito en verde"""
+        colored_message = f"{Colors.GREEN}✅ {message}{Colors.END}"
+        self.logger.info(colored_message)
+        self._log_realtime(f"SUCCESS: {message}", phase)
+        self.log_event("SUCCESS", message, severity="SUCCESS", phase=phase)
+    
+    def log_warning(self, message: str, phase: str = "UNKNOWN"):
+        """Log de advertencia en naranja"""
+        colored_message = f"{Colors.ORANGE}⚠️ {message}{Colors.END}"
+        self.logger.warning(colored_message)
+        self._log_realtime(f"WARNING: {message}", phase)
+        self.log_event("WARNING", message, severity="WARNING", phase=phase)
+    
+    def log_error(self, message: str, phase: str = "UNKNOWN"):
+        """Log de error en rojo"""
+        colored_message = f"{Colors.RED}❌ {message}{Colors.END}"
+        self.logger.error(colored_message)
+        self._log_realtime(f"ERROR: {message}", phase)
+        self.log_event("ERROR", message, severity="ERROR", phase=phase)
+    
+    def log_info(self, message: str, phase: str = "UNKNOWN"):
+        """Log de información en azul"""
+        colored_message = f"{Colors.BLUE}ℹ️ {message}{Colors.END}"
+        self.logger.info(colored_message)
+        self._log_realtime(f"INFO: {message}", phase)
+        self.log_event("INFO", message, severity="INFO", phase=phase)
+    
+    def log_progress(self, message: str, phase: str = "UNKNOWN"):
+        """Log de progreso en púrpura"""
+        colored_message = f"{Colors.PURPLE}🔄 {message}{Colors.END}"
+        self.logger.info(colored_message)
+        self._log_realtime(f"PROGRESS: {message}", phase)
+        self.log_event("PROGRESS", message, severity="INFO", phase=phase)
+    
+    def log_important(self, message: str, phase: str = "UNKNOWN"):
+        """Log de datos importantes en cyan"""
+        colored_message = f"{Colors.CYAN}📊 {message}{Colors.END}"
+        self.logger.info(colored_message)
+        self._log_realtime(f"IMPORTANT: {message}", phase)
+        self.log_event("IMPORTANT", message, severity="INFO", phase=phase)
+    
+    def _log_realtime(self, message: str, phase: str):
+        """Log en tiempo real para evitar pérdida de progreso"""
+        if self.realtime_handler:
+            try:
+                realtime_logger = logging.getLogger('RealtimeLogger')
+                realtime_logger.setLevel(logging.INFO)
+                realtime_logger.addHandler(self.realtime_handler)
+                realtime_logger.info(f"[{phase}] {message}")
+                realtime_logger.removeHandler(self.realtime_handler)
+            except Exception as e:
+                # Fallback a print si hay problemas con logging
+                print(f"Realtime log error: {e}")
     
     def log_event(self, event_type: str, description: str, data: Optional[Dict] = None, 
                   severity: str = "INFO", phase: str = "UNKNOWN"):
@@ -350,3 +443,79 @@ TIPOS DE EVENTOS:
         for handler in self.structured_logger.handlers:
             handler.close()
             self.structured_logger.removeHandler(handler)
+    
+    def generate_phase_summary(self, phase: str, phase_data: Dict[str, Any]) -> str:
+        """Generar resumen breve de fase con datos prioritarios"""
+        summary_lines = []
+        summary_lines.append(f"{Colors.BOLD}{Colors.CYAN}📋 RESUMEN DE FASE: {phase.upper()}{Colors.END}")
+        summary_lines.append("=" * 50)
+        
+        if phase.upper() == "RECONNAISSANCE":
+            # Datos prioritarios para reconocimiento
+            hosts_found = phase_data.get('hosts_discovered', 0)
+            services_found = phase_data.get('services_discovered', 0)
+            public_ip = phase_data.get('public_ip', 'No detectada')
+            network_range = phase_data.get('target_network', 'No configurada')
+            
+            summary_lines.append(f"🌐 Red objetivo: {network_range}")
+            summary_lines.append(f"🌍 IP pública: {public_ip}")
+            summary_lines.append(f"🖥️ Hosts descubiertos: {hosts_found}")
+            summary_lines.append(f"🔌 Servicios encontrados: {services_found}")
+            
+        elif phase.upper() == "CREDENTIAL_HARVESTING":
+            # Datos prioritarios para credenciales
+            credentials_found = phase_data.get('credentials_found', 0)
+            successful_attacks = phase_data.get('successful_attacks', 0)
+            failed_attacks = phase_data.get('failed_attacks', 0)
+            
+            summary_lines.append(f"🔑 Credenciales encontradas: {credentials_found}")
+            summary_lines.append(f"✅ Ataques exitosos: {successful_attacks}")
+            summary_lines.append(f"❌ Ataques fallidos: {failed_attacks}")
+            
+        elif phase.upper() == "LATERAL_MOVEMENT":
+            # Datos prioritarios para movimiento lateral
+            compromised_systems = phase_data.get('compromised_systems', 0)
+            lateral_access = phase_data.get('lateral_access_achieved', 0)
+            exploits_used = phase_data.get('exploits_used', 0)
+            
+            summary_lines.append(f"🎯 Sistemas comprometidos: {compromised_systems}")
+            summary_lines.append(f"🔄 Accesos laterales: {lateral_access}")
+            summary_lines.append(f"💥 Exploits utilizados: {exploits_used}")
+            
+        elif phase.upper() == "PERSISTENCE":
+            # Datos prioritarios para persistencia
+            backdoors_installed = phase_data.get('backdoors_installed', 0)
+            scheduled_tasks = phase_data.get('scheduled_tasks', 0)
+            registry_modifications = phase_data.get('registry_modifications', 0)
+            
+            summary_lines.append(f"🚪 Backdoors instalados: {backdoors_installed}")
+            summary_lines.append(f"⏰ Tareas programadas: {scheduled_tasks}")
+            summary_lines.append(f"📝 Modificaciones de registro: {registry_modifications}")
+            
+        elif phase.upper() == "PRIVILEGE_ESCALATION":
+            # Datos prioritarios para escalada de privilegios
+            privilege_escalations = phase_data.get('privilege_escalations', 0)
+            domain_admin_access = phase_data.get('domain_admin_access', 0)
+            hashes_dumped = phase_data.get('hashes_dumped', 0)
+            
+            summary_lines.append(f"⬆️ Escaladas de privilegios: {privilege_escalations}")
+            summary_lines.append(f"👑 Acceso Domain Admin: {domain_admin_access}")
+            summary_lines.append(f"🔐 Hashes extraídos: {hashes_dumped}")
+            
+        elif phase.upper() == "EXFILTRATION":
+            # Datos prioritarios para exfiltración
+            data_size = phase_data.get('data_size', 0)
+            files_exfiltrated = phase_data.get('files_exfiltrated', 0)
+            exploits_managed = phase_data.get('exploits_managed', 0)
+            
+            summary_lines.append(f"📦 Datos exfiltrados: {data_size:,} bytes ({data_size / (1024*1024):.2f} MB)")
+            summary_lines.append(f"📄 Archivos transferidos: {files_exfiltrated}")
+            summary_lines.append(f"🔧 Exploits gestionados: {exploits_managed}")
+        
+        # Agregar tiempo de ejecución si está disponible
+        execution_time = phase_data.get('execution_time', 0)
+        if execution_time > 0:
+            summary_lines.append(f"⏱️ Tiempo de ejecución: {execution_time:.2f} segundos")
+        
+        summary_lines.append("=" * 50)
+        return "\n".join(summary_lines)

@@ -49,9 +49,12 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
 
 6. **Exfiltración de Datos**
    - Recopilación de datos sensibles
-   - Compresión y encriptación de datos
+   - Compresión de datos (con permisos)
+   - Encriptación de datos (con permisos)
+   - Corrupción de datos (con permisos críticos)
    - Transferencia a servidor remoto
-   - Despliegue de ransomware (simulado)
+   - Gestión de exploits persistentes
+   - Limpieza selectiva (solo evidencia o backdoors completos)
 
 ### 🔧 Características Técnicas
 
@@ -190,7 +193,8 @@ python3 network_info.py
     "remote_user": "pentest",
     "remote_path": "/tmp/exfiltrated_data",
     "compression": true,
-    "encryption": false
+    "encryption": false,
+    "max_data_size": 1073741824
   },
   "logging": {
     "log_level": "INFO",
@@ -243,8 +247,9 @@ python3 network_info.py
 - `remote_server`: Servidor remoto para exfiltración
 - `remote_user`: Usuario para conexión remota
 - `remote_path`: Ruta remota para datos exfiltrados
-- `compression`: Habilitar compresión de datos
-- `encryption`: Habilitar encriptación de datos
+- `compression`: Habilitar compresión de datos (requiere permisos)
+- `encryption`: Habilitar encriptación de datos (requiere permisos)
+- `max_data_size`: Límite de tamaño de datos en bytes (default: 1GB)
 
 #### logging
 - `log_level`: Nivel de logging (DEBUG, INFO, WARNING, ERROR)
@@ -260,6 +265,98 @@ python3 network_info.py
 - `max_concurrent_scans`: Máximo número de escaneos concurrentes
 
 ## Uso
+
+### 🎯 Modo Interactivo (Recomendado)
+
+El sistema ahora incluye un menú interactivo que se ejecuta por defecto:
+
+```bash
+# Ejecutar con menú interactivo (por defecto)
+python3 pentest_automation.py
+
+# Usar modo legacy con argumentos de línea de comandos
+python3 pentest_automation.py --legacy --dry-run
+```
+
+**Menú Principal:**
+1. ⚙️ **Configuración automática de red**
+2. 🚀 **Escaneo completo (todas las fases)**
+3. 🧪 **Modo de prueba (dry-run)**
+4. 📋 **Escaneo por módulos específicos**
+5. 📂 **Continuar escaneo desde log existente**
+6. 📊 **Ver logs y reportes existentes**
+7. ❌ **Salir del sistema**
+
+**Características del modo interactivo:**
+- 🏷️ **Motes personalizados**: Asigne nombres personalizados a sus escaneos
+- 📋 **Selección de módulos**: Elija exactamente qué fases ejecutar
+- 📂 **Gestión de logs**: Vea y continúe escaneos anteriores
+- 🎨 **Interfaz colorizada**: Mensajes claros con códigos de color
+- ⚡ **Logging en tiempo real**: No pierda progreso si se interrumpe
+
+### 🔐 Sistema de Permisos y Confirmaciones
+
+El sistema incluye un sistema robusto de permisos para acciones que pueden modificar o dañar el sistema objetivo:
+
+**Niveles de Riesgo:**
+- 🟢 **BAJO**: Acciones seguras (limpieza de evidencia)
+- 🟡 **MEDIO**: Acciones que modifican archivos (compresión, creación)
+- 🟠 **ALTO**: Acciones que modifican el sistema (encriptación, backdoors)
+- 🔴 **CRÍTICO**: Acciones irreversibles (corrupción de datos)
+
+**Sistema de Confirmación:**
+1. **Primera confirmación**: Pregunta básica de proceder
+2. **Doble confirmación**: Para acciones irreversibles
+3. **PIN de aprobación**: `0443` para acciones críticas
+
+**Acciones Protegidas:**
+- 🔒 **Encriptación de datos**: Requiere permiso del usuario
+- 💥 **Corrupción de datos**: Requiere PIN de aprobación
+- 🗜️ **Compresión de archivos**: Requiere confirmación
+- 🧹 **Limpieza de backdoors**: Requiere doble confirmación
+- 🧽 **Limpieza de evidencia**: Opción segura (mantiene accesos)
+
+### 🏷️ Sistema de Motes Personalizados
+
+Cada escaneo puede tener un "mote" (nombre personalizado) para facilitar la identificación:
+
+**Ejemplos de motes:**
+- `Red_Principal_2024`
+- `Auditoria_Cliente_X`
+- `Prueba_Desarrollo`
+- `Penetration_Test_Office`
+
+**Características:**
+- 📝 **Identificación fácil**: Encuentre rápidamente sus escaneos
+- 📅 **Fechas automáticas**: Se sugiere fecha/hora si no especifica
+- 🔍 **Búsqueda rápida**: Filtre logs por mote personalizado
+- 📊 **Historial organizado**: Vea todos sus escaneos con nombres descriptivos
+
+### Modo Gestión de Exploits Persistentes
+
+El sistema ahora incluye un modo especial para gestionar exploits persistentes existentes sin necesidad de re-escanear la red:
+
+```bash
+# Gestionar exploits persistentes desde logs existentes
+python3 pentest_automation.py --manage-exploits -p exfil
+
+# Con archivo de log específico
+python3 pentest_automation.py --manage-exploits --log-file pentest_automation.log -p exfil
+```
+
+**Características del modo gestión:**
+- 📋 Carga exploits persistentes desde logs existentes
+- 🔧 Opciones de gestión: exfiltrar, limpiar, modificar, probar conectividad
+- 🧹 Limpieza automática de backdoors y evidencia
+- 🔍 Pruebas de conectividad de firewalls
+- 📊 Reportes detallados de estado de exploits
+
+**Opciones disponibles:**
+1. **Exfiltrar datos** desde exploits activos
+2. **Limpiar todos** los exploits persistentes
+3. **Modificar configuración** de exploits (IPs, puertos)
+4. **Probar conectividad** de backdoors
+5. **Continuar sin cambios**
 
 ### Configuración Automática
 ```bash
@@ -301,17 +398,34 @@ python3 pentest_automation.py -p priv
 
 # Solo exfiltración
 python3 pentest_automation.py -p exfil
+
+# Gestión de exploits persistentes existentes
+python3 pentest_automation.py --manage-exploits -p exfil
+
+# Gestión con archivo de log específico
+python3 pentest_automation.py --manage-exploits --log-file mi_log.log -p exfil
 ```
 
 ### Opciones de Línea de Comandos
+
+**Modo Interactivo (por defecto):**
 ```bash
-python3 pentest_automation.py [opciones]
+python3 pentest_automation.py                    # Menú interactivo
+python3 pentest_automation.py -c mi_config.json  # Con configuración personalizada
+```
+
+**Modo Legacy (argumentos de línea de comandos):**
+```bash
+python3 pentest_automation.py --legacy [opciones]
 
 Opciones:
   -c, --config CONFIG    Archivo de configuración (default: config.json)
-  -p, --phase PHASE      Fase específica a ejecutar o "config" para solo configuración
-  --dry-run             Ejecutar en modo de prueba
-  --auto-config         Solo ejecutar configuración automática
+  --legacy              Usar modo legacy con argumentos de línea de comandos
+  -p, --phase PHASE      Fase específica a ejecutar (solo en modo legacy)
+  --dry-run             Ejecutar en modo de prueba (solo en modo legacy)
+  --auto-config         Solo ejecutar configuración automática (solo en modo legacy)
+  --manage-exploits     Modo gestión de exploits persistentes (solo en modo legacy)
+  --log-file FILE       Archivo de log para cargar exploits (solo en modo legacy)
   -h, --help            Mostrar ayuda
 ```
 
