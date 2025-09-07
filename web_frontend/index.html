@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Pentest Report Viewer</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> Pentest Report Viewer</h1>
+                <p>Visualizador de reportes de pruebas de penetración</p>
+            </div>
+        </header>
+
+        <!-- Scan Selection -->
+        <section class="scan-selection">
+            <div class="card">
+                <h2><i class="fas fa-folder-open"></i> Seleccionar Escaneo</h2>
+                <div class="scan-list" id="scanList">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando escaneos...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent" style="display: none;">
+            <!-- Scan Info -->
+            <section class="scan-info">
+                <div class="card">
+                    <div class="scan-header">
+                        <h2 id="scanTitle"><i class="fas fa-chart-line"></i> Información del Escaneo</h2>
+                        <div class="scan-badges" id="scanBadges"></div>
+                    </div>
+                    <div class="scan-details" id="scanDetails"></div>
+                </div>
+            </section>
+
+            <!-- Statistics -->
+            <section class="statistics">
+                <div class="stats-grid" id="statsGrid"></div>
+            </section>
+
+            <!-- Phases -->
+            <section class="phases">
+                <h2><i class="fas fa-tasks"></i> Fases del Pentest</h2>
+                <div class="phases-grid" id="phasesGrid"></div>
+            </section>
+
+            <!-- Persistence & Backdoors -->
+            <section class="persistence" id="persistenceSection">
+                <div class="card">
+                    <h2><i class="fas fa-lock"></i> Persistencia y Backdoors</h2>
+                    <div class="persistence-content" id="persistenceContent"></div>
+                </div>
+            </section>
+
+            <!-- Compromised Systems -->
+            <section class="compromised-systems" id="compromisedSection">
+                <div class="card">
+                    <h2><i class="fas fa-desktop"></i> Sistemas Comprometidos</h2>
+                    <div class="systems-grid" id="systemsGrid"></div>
+                </div>
+            </section>
+
+            <!-- IoT Devices -->
+            <section class="iot-devices" id="iotSection">
+                <div class="card">
+                    <h2><i class="fas fa-video"></i> Dispositivos IoT</h2>
+                    <div class="iot-grid" id="iotGrid"></div>
+                </div>
+            </section>
+
+            <!-- Database Connections -->
+            <section class="databases" id="databaseSection">
+                <div class="card">
+                    <h2><i class="fas fa-database"></i> Conexiones de Base de Datos</h2>
+                    <div class="database-grid" id="databaseGrid"></div>
+                </div>
+            </section>
+
+            <!-- Exfiltrated Data -->
+            <section class="exfiltrated-data" id="exfiltrationSection">
+                <div class="card">
+                    <h2><i class="fas fa-download"></i> Datos Exfiltrados</h2>
+                    <div class="exfiltration-content" id="exfiltrationContent"></div>
+                </div>
+            </section>
+
+            <!-- Network Map -->
+            <section class="network-map" id="networkSection">
+                <div class="card">
+                    <h2><i class="fas fa-network-wired"></i> Mapa de Red</h2>
+                    <div class="network-content" id="networkContent"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 Pentest Automation Tool - Report Viewer</p>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="credentialModal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="modalTitle">Credenciales</h3>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script src="static/js/app.js"></script>
+</body>
+</html>

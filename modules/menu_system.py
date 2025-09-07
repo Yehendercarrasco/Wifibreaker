@@ -83,13 +83,17 @@ class MenuSystem:
         
         self.print_menu_option(1, "🔧 Configuración automática de red", "⚙️")
         self.print_menu_option(2, "🚀 Escaneo completo (todas las fases)", "🎯")
-        self.print_menu_option(3, "🧪 Modo de prueba (dry-run)", "🔍")
-        self.print_menu_option(4, "📋 Escaneo por módulos específicos", "🔧")
-        self.print_menu_option(5, "📂 Continuar escaneo desde log existente", "📁")
-        self.print_menu_option(6, "📊 Ver logs y reportes existentes", "📈")
-        self.print_menu_option(7, "❌ Salir del sistema", "🚪")
+        self.print_menu_option(3, "🧊 Pentest frío (ejecuta y limpia)", "🧊")
+        self.print_menu_option(4, "🧪 Modo de prueba (dry-run)", "🔍")
+        self.print_menu_option(5, "📋 Escaneo por módulos específicos", "🔧")
+        self.print_menu_option(6, "📂 Continuar escaneo desde log existente", "📁")
+        self.print_menu_option(7, "📊 Ver logs y reportes existentes", "📈")
+        self.print_menu_option(8, "🔍 Reconocimiento avanzado", "🔍")
+        self.print_menu_option(9, "📁 Gestión de escaneos", "📁")
+        self.print_menu_option(10, "🔐 Gestión de backdoors y accesos remotos", "🔐")
+        self.print_menu_option(11, "❌ Salir del sistema", "🚪")
         
-        choice = self.get_user_choice(7, "Seleccione una opción del menú principal")
+        choice = self.get_user_choice(11, "Seleccione una opción del menú principal")
         
         if choice == 0:  # Cancelado
             return "exit"
@@ -97,11 +101,15 @@ class MenuSystem:
         menu_options = {
             1: "autoconfig",
             2: "full_scan",
-            3: "dry_run",
-            4: "module_scan",
-            5: "continue_scan",
-            6: "view_logs",
-            7: "exit"
+            3: "cold_pentest",
+            4: "dry_run",
+            5: "module_scan",
+            6: "continue_scan",
+            7: "view_logs",
+            8: "advanced_reconnaissance",
+            9: "scan_management",
+            10: "backdoor_management",
+            11: "exit"
         }
         
         return menu_options.get(choice, "exit")
@@ -115,6 +123,7 @@ class MenuSystem:
         
         modules = [
             ("recon", "🔍 Reconocimiento de red", "Escaneo de hosts y servicios"),
+            ("advanced_recon", "🔍 Reconocimiento Avanzado", "Detección de arquitectura, SO y topología"),
             ("creds", "🔑 Recolección de credenciales", "Ataques de fuerza bruta y spoofing"),
             ("lateral", "🔄 Movimiento lateral", "Explotación y acceso lateral"),
             ("persist", "🚪 Persistencia", "Instalación de backdoors"),

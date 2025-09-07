@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
 from modules.logging_system import LoggingSystem
+from modules.clean_console import CleanConsole
 
 class CredentialModule:
     """Módulo de recolección de credenciales"""
@@ -23,6 +24,7 @@ class CredentialModule:
         self.credentials_config = config['credentials']
         self.network_config = config['network_config']
         self.logging_system = LoggingSystem(config, logger)
+        self.clean_console = CleanConsole(config, logger)
         
         # Resultados de recolección de credenciales
         self.results = {
@@ -276,13 +278,19 @@ class CredentialModule:
                 for password in passwords:
                     f.write(f"{password}\n")
             
-            # Ejecutar Hydra
+            # Ejecutar Hydra con consola limpia
             command = [
                 'hydra', '-L', str(users_file), '-P', str(passwords_file),
                 '-t', '4', '-f', f'ssh://{host}:{port}'
             ]
             
-            result = self._run_command(command, timeout=300)
+            result = self.clean_console.run_command_clean(
+                command,
+                f"Fuerza bruta SSH en {host}:{port}",
+                f"Credenciales SSH encontradas en {host}",
+                f"Fuerza bruta SSH falló en {host}",
+                timeout=300
+            )
             
             if result['success'] and 'login:' in result['stdout']:
                 # Parsear resultado exitoso

@@ -12,6 +12,7 @@ from pathlib import Path
 import ipaddress
 import re
 from modules.logging_system import LoggingSystem
+from modules.clean_console import CleanConsole
 
 class ReconnaissanceModule:
     """Módulo de reconocimiento de red y sistemas"""
@@ -22,6 +23,7 @@ class ReconnaissanceModule:
         self.network_config = config['network_config']
         self.targets_config = config['targets']
         self.logging_system = LoggingSystem(config, logger)
+        self.clean_console = CleanConsole(config, logger)
         
         # Resultados del reconocimiento
         self.results = {
@@ -202,39 +204,43 @@ class ReconnaissanceModule:
     
     def arp_scan(self) -> List[Dict[str, Any]]:
         """Realizar escaneo ARP para descubrir hosts activos"""
-        self.logger.info("🔍 Ejecutando escaneo ARP...")
-        
         hosts = []
         target_network = self.network_config['target_network']
         
-        try:
-            # Ejecutar arp-scan
-            result = self._run_command(['arp-scan', '--localnet', '--quiet'], timeout=60)
+        # Usar consola limpia
+        result = self.clean_console.run_command_clean(
+            ['arp-scan', '--localnet', '--quiet'],
+            f"Escaneo ARP en {target_network}",
+            f"Escaneo ARP completado, {len(hosts)} hosts encontrados",
+            "Error en escaneo ARP",
+            timeout=60
+        )
+        
+        if result['success']:
+            lines = result['stdout'].split('\n')
+            for line in lines:
+                # Parsear línea de arp-scan
+                parts = line.split()
+                if len(parts) >= 3 and parts[0].count('.') == 3:
+                    ip = parts[0]
+                    mac = parts[1]
+                    vendor = ' '.join(parts[2:]) if len(parts) > 2 else 'Unknown'
+                    
+                    host = {
+                        'ip': ip,
+                        'mac': mac,
+                        'vendor': vendor,
+                        'discovery_method': 'arp_scan',
+                        'timestamp': time.time()
+                    }
+                    
+                    hosts.append(host)
+                    self.logging_system.log_discovery(
+                        "HOST", ip, host, "RECONNAISSANCE"
+                    )
             
-            if result['success']:
-                lines = result['stdout'].split('\n')
-                for line in lines:
-                    # Parsear línea de arp-scan
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[0].count('.') == 3:
-                        ip = parts[0]
-                        mac = parts[1]
-                        vendor = ' '.join(parts[2:]) if len(parts) > 2 else 'Unknown'
-                        
-                        host = {
-                            'ip': ip,
-                            'mac': mac,
-                            'vendor': vendor,
-                            'discovery_method': 'arp_scan',
-                            'timestamp': time.time()
-                        }
-                        
-                        hosts.append(host)
-                        self.logging_system.log_discovery(
-                            "HOST", ip, host, "RECONNAISSANCE"
-                        )
-            
-            self.logger.info(f"✅ ARP scan completado: {len(hosts)} hosts descubiertos")
+            # Actualizar mensaje de éxito con el número real de hosts
+            self.clean_console.complete_operation(True, f"Escaneo ARP completado, {len(hosts)} hosts encontrados")
             
         except Exception as e:
             self.logger.error(f"❌ Error en ARP scan: {e}")

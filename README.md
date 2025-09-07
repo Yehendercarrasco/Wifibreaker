@@ -23,6 +23,13 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
    - Traceroute para mapeo de rutas
    - Enumeración de servicios
 
+1.5. **Reconocimiento Avanzado** (Nuevo)
+   - Detección de arquitectura de sistemas
+   - Identificación de sistemas operativos
+   - Mapeo de topología de red
+   - Detección de dispositivos específicos (IoT, impresoras, etc.)
+   - Generación de mapa visual de red
+
 2. **Recolección de Credenciales**
    - LLMNR/NBT-NS spoofing con Responder
    - Sniffing de tráfico con tcpdump
@@ -58,6 +65,142 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
    - Gestión de exploits persistentes
    - Limpieza selectiva (solo evidencia o backdoors completos)
 
+7. **Explotación de Dispositivos IoT**
+   - Explotación de cámaras IP (Ezviz, Hikvision, Dahua)
+   - Ataques a routers (TP-Link, D-Link, Netgear)
+   - Explotación de dispositivos IoT (Intelbras, Axis, Bosch)
+   - Acceso remoto a cámaras de seguridad
+   - Explotación de vulnerabilidades IoT conocidas
+   - Establecimiento de acceso visual a la red
+
+8. **Exfiltración de Bases de Datos SQL**
+   - Descubrimiento de bases de datos (MySQL, MSSQL, PostgreSQL, Oracle, MongoDB, Redis)
+   - Prueba de credenciales por defecto
+   - Ataques de SQL injection (UNION, Boolean, Time-based, Error-based)
+   - Exfiltración de datos de bases de datos
+   - Establecimiento de conexiones remotas
+   - Extracción de esquemas y datos sensibles
+
+9. **Gestión de Backdoors y Accesos Remotos**
+   - Descubrimiento automático de backdoors existentes
+   - Prueba de conexiones de backdoors activos
+   - Ejecución de escaneos remotos desde backdoors
+   - Gestión de accesos remotos (modificar IPs, puertos, credenciales)
+
+10. **Tareas Post-Ejecución** (Nuevo)
+    - Escaneo profundo de red desde backdoors
+    - Extracción avanzada de credenciales (Kerberoasting, ASREPRoasting, DCSync)
+    - Escalada de privilegios avanzada (kernel exploits, UAC bypass)
+    - Movimiento lateral avanzado (Pass-the-hash, WMI, DCOM)
+    - Exfiltración comprehensiva de datos
+    - Persistencia avanzada (WMI events, COM hijacking)
+    - Mapeo completo de red
+
+### 📁 **Gestión de Escaneos por Carpetas**
+
+#### **Organización Automática**
+- **Carpeta por escaneo**: Cada escaneo se organiza en su propia carpeta con mote
+- **Estructura organizada**: 
+  - `logs/` - Logs de cada fase
+  - `evidence/` - Evidencia de cada fase
+  - `exfiltration/` - Datos exfiltrados
+  - `console/` - Salida de consola completa
+  - `reports/` - Reportes generados
+  - `backdoors/` - Información de backdoors
+  - `config/` - Configuración del escaneo
+
+#### **Funcionalidades de Gestión**
+- **📋 Listar escaneos**: Ver todos los escaneos disponibles
+- **🔍 Ver detalles**: Información completa de cada escaneo
+- **📊 Ver resumen**: Estadísticas y fases completadas
+- **🗂️ Explorar archivos**: Navegar por la estructura de archivos
+- **🔄 Continuar escaneos**: Retomar escaneos desde cualquier punto
+- **🔐 Cargar backdoors**: Usar escaneos como fuente de backdoors
+
+### 🧊 **Pentest Frío**
+
+#### **Características del Pentest Frío**
+- **Ejecución completa**: Ejecuta todas las fases del pentest
+- **Limpieza automática**: Elimina todos los backdoors, credenciales y persistencia al final
+- **Datos de referencia**: Guarda solo los datos para análisis, sin accesos activos
+- **Identificación clara**: Marcado como "🧊 FRÍO" en todos los menús
+- **Advertencias**: Avisos claros de que los datos son solo de referencia
+
+#### **Proceso de Limpieza**
+- **Backdoors**: Elimina todos los backdoors establecidos
+- **Credenciales**: Remueve usuarios creados
+- **Persistencia**: Limpia tareas programadas, servicios y modificaciones de registro
+- **Conexiones**: Cierra conexiones persistentes (SSH, RDP, Web)
+- **Archivos**: Limpia archivos temporales y evidencia
+- **Reporte de limpieza**: Genera reporte detallado de lo que fue eliminado
+
+#### **Casos de Uso**
+- **Pruebas de concepto**: Verificar capacidades sin dejar rastros
+- **Evaluaciones**: Probar vulnerabilidades sin comprometer sistemas
+- **Demostraciones**: Mostrar capacidades sin riesgo
+- **Análisis**: Obtener datos de referencia para reportes
+
+### 🌐 **Frontend Web para Reportes**
+
+#### **Características del Frontend**
+- **Interfaz elegante**: Diseño moderno y profesional
+- **Visualización interactiva**: Navegación intuitiva por resultados
+- **Secciones organizadas**: Información estructurada y fácil de entender
+- **Instrucciones de uso**: Comandos y acciones para cada backdoor
+- **Soporte completo**: Pentest normal y pentest frío
+
+#### **Funcionalidades**
+- **📊 Estadísticas**: Resumen numérico de resultados
+- **🔐 Persistencia**: Lista detallada de backdoors con instrucciones
+- **🖥️ Sistemas comprometidos**: Hosts accesibles con credenciales
+- **📹 Dispositivos IoT**: Cámaras y dispositivos accesibles
+- **🗄️ Bases de datos**: Conexiones establecidas
+- **📥 Datos exfiltrados**: Archivos y tamaños
+- **🗺️ Mapa de red**: Topología descubierta
+
+#### **Uso del Frontend**
+```bash
+# Iniciar servidor web
+python start_web_frontend.py
+
+# Acceder en navegador
+http://localhost:8080
+```
+
+#### **Instrucciones de Backdoors**
+- **Netcat**: `nc IP PUERTO` - Conexión directa
+- **PowerShell**: Comandos para ejecutar payloads
+- **Cámaras**: `ffplay rtsp://usuario:password@IP:puerto/stream`
+- **Bases de datos**: `mysql -h IP -P PUERTO -u usuario -ppassword`
+- **SSH**: `ssh usuario@IP` - Acceso al sistema
+
+### ⚡ **Exfiltración Inteligente**
+
+#### **Configuración de Opciones Delicadas**
+- **Al inicio del script** se pregunta si habilitar opciones delicadas
+- **Si se dice NO** → Solo exfiltración rápida de archivos pequeños
+- **Si se dice SÍ** → Se configuran opciones específicas:
+  - ✅ Compresión de archivos del sistema
+  - ✅ Encriptación de datos sensibles  
+  - ✅ Corrupción de archivos críticos
+
+#### **Modos de Exfiltración**
+- **⚡ Exfiltración Rápida**: Solo archivos pequeños (< 10MB)
+  - Excluye: fotos, videos, audio, archivos comprimidos
+  - Incluye: configuraciones, logs, documentos pequeños, scripts
+  - Límite total: 100MB máximo
+- **🆕 Exfiltración Completa**: Todos los archivos del sistema
+  - Sin límites de tamaño
+  - Incluye todos los tipos de archivos
+  - Opciones delicadas aplicables
+
+#### **Gestión desde Backdoors**
+- **🔓 Sin límites**: Todas las opciones delicadas disponibles
+- **📤 Exfiltración completa** desde backdoors establecidos
+- **🔧 Gestión avanzada** de accesos remotos
+   - Actualización automática de logs con cambios
+   - Escaneo completo desde conexiones establecidas
+
 ### 🔧 Características Técnicas
 
 - **Arquitectura Modular**: Cada fase es un módulo independiente
@@ -69,6 +212,11 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
 - **🕵️ Modo Sigiloso**: Técnicas de persistencia disfrazadas y realistas
 - **🔗 Conexiones Persistentes**: Acceso remoto continuo y automático
 - **👤 Usuarios Sigilosos**: Nombres y contraseñas que pasan desapercibidos
+- **🔍 Reconocimiento Avanzado**: Detección de arquitectura, SO y topología de red
+- **🔧 Tareas Post-Ejecución**: Procedimientos extensos desde backdoors establecidos
+- **📁 Gestión de Escaneos**: Organización por carpetas con mote, evidencia y logs
+- **🧊 Pentest Frío**: Ejecuta todo pero limpia al final, solo datos de referencia
+- **🌐 Frontend Web**: Visualizador elegante de reportes con interfaz web
 
 ## Requisitos del Sistema
 
@@ -314,6 +462,320 @@ Estas características están diseñadas para crear un **desafío realista** don
 4. **Localizar archivos maliciosos** en rutas del sistema
 5. **Analizar logs del sistema** para encontrar actividad sospechosa
 
+## 📹 Explotación de Cámaras IP y Dispositivos IoT
+
+### Cámaras Detectadas en el Reporte
+
+El sistema ha identificado una **cámara Ezviz** en la red:
+- **IP**: 192.168.1.218
+- **Vendor**: Hangzhou Ezviz Software
+- **MAC**: 34:C6:DD:B4:97:4F
+
+### Exploits Implementados
+
+#### 🎥 Cámaras Ezviz
+- **Credenciales por defecto**: admin/admin, admin/12345, admin/password
+- **Path Traversal**: Acceso a archivos del sistema
+- **RCE**: Ejecución remota de comandos
+- **Stream RTSP**: Acceso directo al video en vivo
+
+#### 🔧 Routers TP-Link
+- **Command Injection**: Inyección de comandos en formularios
+- **Backdoor**: Acceso a backdoors conocidos
+- **Credenciales por defecto**: admin/admin, admin/password
+
+#### 📡 Dispositivos Intelbras
+- **RCE**: Ejecución remota de comandos
+- **Path Traversal**: Acceso a archivos del sistema
+- **Credenciales por defecto**: admin/admin, admin/123456
+
+### Acceso Remoto Configurado
+
+Una vez comprometida una cámara, el sistema genera:
+
+1. **Script de acceso web**: `camera_access_192.168.1.218.sh`
+2. **URL de interfaz web**: `http://192.168.1.218:80`
+3. **Stream RTSP**: `rtsp://admin:admin@192.168.1.218:554/stream1`
+4. **Stream alternativo**: `rtsp://admin:admin@192.168.1.218:8554/stream1`
+
+### Comandos de Acceso
+
+```bash
+# Acceder a la interfaz web
+xdg-open http://192.168.1.218:80
+
+# Reproducir stream con VLC
+vlc rtsp://admin:admin@192.168.1.218:554/stream1
+
+# Usar ffmpeg para grabar
+ffmpeg -i rtsp://admin:admin@192.168.1.218:554/stream1 -t 60 output.mp4
+```
+
+## 🗄️ Exfiltración de Bases de Datos SQL
+
+### Bases de Datos Soportadas
+
+El sistema puede detectar y explotar las siguientes bases de datos:
+
+#### 🐬 MySQL
+- **Puerto**: 3306
+- **Credenciales por defecto**: root/root, admin/admin, mysql/mysql
+- **Comandos de conexión**: `mysql -h IP -u usuario -p`
+
+#### 🏢 MSSQL (Microsoft SQL Server)
+- **Puerto**: 1433
+- **Credenciales por defecto**: sa/sa, admin/admin, administrator/admin
+- **Comandos de conexión**: `sqlcmd -S IP,1433 -U usuario -P contraseña`
+
+#### 🐘 PostgreSQL
+- **Puerto**: 5432
+- **Credenciales por defecto**: postgres/postgres, admin/admin, root/root
+- **Comandos de conexión**: `psql -h IP -U usuario -d postgres`
+
+#### 🏛️ Oracle
+- **Puerto**: 1521
+- **Credenciales por defecto**: system/system, sys/sys, admin/admin
+- **Comandos de conexión**: `sqlplus usuario/contraseña@IP:1521/XE`
+
+#### 🍃 MongoDB
+- **Puerto**: 27017
+- **Credenciales por defecto**: admin/admin, root/root, user/user
+- **Comandos de conexión**: `mongo mongodb://usuario:contraseña@IP:27017/admin`
+
+#### 🔴 Redis
+- **Puerto**: 6379
+- **Credenciales por defecto**: default/, admin/admin
+- **Comandos de conexión**: `redis-cli -h IP -p 6379 -a contraseña`
+
+### Técnicas de SQL Injection
+
+#### 💉 UNION-based
+```sql
+' UNION SELECT 1,2,3,4,5--
+' UNION SELECT user(),database(),version(),4,5--
+' UNION SELECT table_name,column_name,3,4,5 FROM information_schema.columns--
+```
+
+#### 🔍 Boolean-based
+```sql
+' OR '1'='1
+' OR 1=1--
+' AND 1=1--
+' AND 1=2--
+```
+
+#### ⏰ Time-based
+```sql
+'; WAITFOR DELAY '00:00:05'--
+' OR SLEEP(5)--
+'; SELECT SLEEP(5)--
+```
+
+#### ❌ Error-based
+```sql
+' AND (SELECT * FROM (SELECT COUNT(*),CONCAT(version(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)--
+' AND EXTRACTVALUE(1, CONCAT(0x7e, (SELECT version()), 0x7e))--
+```
+
+### Conexiones Remotas Configuradas
+
+Una vez comprometida una base de datos, el sistema genera:
+
+1. **Script de conexión**: `db_connection_IP_tipo.sh`
+2. **Credenciales válidas**: Usuario y contraseña
+3. **Comandos de acceso**: Comandos específicos por tipo de BD
+4. **Datos exfiltrados**: Esquemas, tablas, usuarios
+
+### Comandos de Acceso
+
+```bash
+# Conectar a MySQL
+mysql -h 192.168.1.5 -P 3306 -u root -p
+
+# Conectar a MSSQL
+sqlcmd -S 192.168.1.7,1433 -U sa -P admin
+
+# Conectar a PostgreSQL
+psql -h 192.168.1.12 -p 5432 -U postgres -d postgres
+
+# Conectar a MongoDB
+mongo mongodb://admin:admin@192.168.1.17:27017/admin
+
+# Conectar a Redis
+redis-cli -h 192.168.1.18 -p 6379 -a admin
+```
+
+## 🔐 Gestión de Backdoors y Accesos Remotos
+
+### Funcionalidades Principales
+
+El sistema de gestión de backdoors permite:
+
+#### 📂 **Carga desde Logs Específicos**
+- **Selecciona log específico** como punto de partida
+- **Carga backdoors** desde evidencia guardada
+- **Usa como referencia** logs de pentesting anteriores
+- **Mantiene contexto** de escaneos previos
+
+#### 🔍 **Descubrimiento Automático**
+- Busca backdoors en logs de persistencia
+- Identifica accesos remotos de cámaras IoT
+- Detecta conexiones de bases de datos
+- Carga automáticamente desde evidencia existente
+
+#### 🔗 **Prueba de Conexiones**
+- Verifica estado de backdoors netcat
+- Prueba accesos a cámaras IP
+- Valida conexiones a bases de datos
+- Mide tiempos de respuesta
+
+#### 🚀 **Escaneo Remoto**
+- Ejecuta reconocimiento desde backdoors
+- Realiza movimiento lateral remoto
+- Verifica persistencia desde conexiones establecidas
+- Escanea red desde dispositivos comprometidos
+
+#### 🔧 **Gestión de Accesos**
+- Modifica direcciones IP de backdoors
+- Cambia puertos de conexión
+- Actualiza credenciales de acceso
+- Modifica scripts de conexión
+
+### Tipos de Backdoors Soportados
+
+#### 🖥️ **Backdoors de Sistema**
+- **Netcat**: Conexiones TCP reversas
+- **PowerShell**: Scripts de PowerShell persistentes
+- **Python**: Backdoors en Python
+
+#### 📹 **Accesos de Cámaras**
+- **Ezviz**: Cámaras de seguridad
+- **Hikvision**: Sistemas de videovigilancia
+- **Dahua**: Cámaras IP
+
+#### 🗄️ **Conexiones de Bases de Datos**
+- **MySQL**: Conexiones a bases de datos MySQL
+- **MSSQL**: Acceso a SQL Server
+- **PostgreSQL**: Conexiones PostgreSQL
+- **MongoDB**: Acceso a MongoDB
+- **Redis**: Conexiones Redis
+
+### Comandos de Gestión
+
+```bash
+# Ejecutar gestión de backdoors
+python3 pentest_automation.py -p backdoor
+
+# Desde menú interactivo
+python3 pentest_automation.py
+# Seleccionar opción 7: Gestión de backdoors
+
+# Flujo recomendado:
+# 1. Seleccionar "Cargar backdoors desde log específico"
+# 2. Elegir log de pentesting anterior
+# 3. Probar conexiones de backdoors
+# 4. Ejecutar escaneos remotos desde backdoors
+# 5. Gestionar accesos remotos según necesidad
+```
+
+### Flujo de Trabajo con Logs
+
+1. **📂 Seleccionar Log**: Elige un log de pentesting anterior como punto de partida
+2. **🔍 Cargar Backdoors**: El sistema extrae automáticamente todos los backdoors del log
+3. **🔗 Probar Conexiones**: Verifica qué backdoors siguen activos
+4. **🚀 Ejecutar Escaneos**: Usa backdoors activos para escaneos remotos
+5. **🔧 Gestionar Accesos**: Modifica configuraciones según necesidad
+
+### Actualización Automática de Logs
+
+El sistema actualiza automáticamente los logs cuando se modifican accesos:
+
+```json
+{
+  "timestamp": 1757184150.567725,
+  "action": "ACCESS_MODIFIED",
+  "access_id": "backdoor_192.168.1.5",
+  "original": {
+    "ip": "192.168.1.5",
+    "port": "4444",
+    "username": "admin"
+  },
+  "modified": {
+    "ip": "192.168.1.10",
+    "port": "5555",
+    "username": "svc_windowsupdate"
+  },
+  "changes": {
+    "ip": "192.168.1.10",
+    "port": "5555",
+    "username": "svc_windowsupdate"
+  }
+}
+```
+
+### Demo de Exfiltración SQL
+
+Para probar el módulo de exfiltración SQL:
+
+```bash
+# Ejecutar demo de exfiltración SQL
+python3 examples/sql_exfiltration_demo.py
+
+# El demo incluye:
+# - Descubrimiento de bases de datos
+# - Ataques de SQL injection
+# - Exfiltración de datos
+# - Establecimiento de conexiones remotas
+```
+
+### Demo de Gestión de Backdoors
+
+Para probar el módulo de gestión de backdoors:
+
+```bash
+# Ejecutar demo de gestión de backdoors
+python3 examples/backdoor_management_demo.py
+
+# El demo incluye:
+# - Descubrimiento de backdoors existentes
+# - Prueba de conexiones
+# - Ejecución de escaneos remotos
+# - Gestión de accesos remotos
+# - Modificación de configuraciones
+```
+
+### Demo de Carga desde Logs
+
+Para probar la carga de backdoors desde logs específicos:
+
+```bash
+# Ejecutar demo de carga desde logs
+python3 examples/backdoor_from_log_demo.py
+
+# El demo incluye:
+# - Creación de logs de ejemplo
+# - Carga desde log específico
+# - Carga desde evidencia de persistencia
+# - Carga desde evidencia de IoT
+# - Carga desde evidencia de SQL
+# - Descubrimiento desde todos los logs
+```
+
+### Demo de Opciones Delicadas
+
+Para probar la configuración de opciones delicadas:
+
+```bash
+# Ejecutar demo de opciones delicadas
+python3 examples/delicate_options_demo.py
+
+# El demo incluye:
+# - Configuración de opciones delicadas
+# - Comparación entre escaneo normal y gestión de backdoors
+# - Demostración de modos de exfiltración
+# - Ejemplos de archivos incluidos/excluidos
+```
+
 ## Uso
 
 ### 🎯 Modo Interactivo (Recomendado)
@@ -328,6 +790,11 @@ python3 pentest_automation.py
 python3 pentest_automation.py --legacy --dry-run
 ```
 
+**⚠️ Configuración de Opciones Delicadas (al inicio):**
+- El sistema pregunta si habilitar opciones delicadas
+- **Si dice NO** → Solo exfiltración rápida de archivos pequeños
+- **Si dice SÍ** → Configuración específica de compresión, encriptación y corrupción
+
 **Menú Principal:**
 1. ⚙️ **Configuración automática de red**
 2. 🚀 **Escaneo completo (todas las fases)**
@@ -335,7 +802,10 @@ python3 pentest_automation.py --legacy --dry-run
 4. 📋 **Escaneo por módulos específicos**
 5. 📂 **Continuar escaneo desde log existente**
 6. 📊 **Ver logs y reportes existentes**
-7. ❌ **Salir del sistema**
+7. 🔍 **Reconocimiento avanzado**
+8. 📁 **Gestión de escaneos** (Nuevo)
+9. 🔐 **Gestión de backdoors y accesos remotos**
+10. ❌ **Salir del sistema**
 
 **Características del modo interactivo:**
 - 🏷️ **Motes personalizados**: Asigne nombres personalizados a sus escaneos
@@ -448,6 +918,15 @@ python3 pentest_automation.py -p priv
 
 # Solo exfiltración
 python3 pentest_automation.py -p exfil
+
+# Solo explotación IoT
+python3 pentest_automation.py -p iot
+
+# Solo exfiltración SQL
+python3 pentest_automation.py -p sql
+
+# Solo gestión de backdoors
+python3 pentest_automation.py -p backdoor
 
 # Gestión de exploits persistentes existentes
 python3 pentest_automation.py --manage-exploits -p exfil
