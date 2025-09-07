@@ -35,11 +35,13 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
    - Exploits de servicios web (Tomcat, Struts, Jenkins)
    - Establecimiento de acceso lateral
 
-4. **Persistencia y Ocultación**
-   - Instalación de backdoors (netcat, PowerShell, Python)
-   - Creación de tareas programadas
-   - Modificación del registro de Windows
-   - Instalación de servicios maliciosos
+4. **Persistencia y Ocultación (Modo Sigiloso)**
+   - Instalación de backdoors disfrazados (netcat, PowerShell, Python)
+   - Creación de tareas programadas con nombres legítimos
+   - Modificación del registro de Windows con entradas discretas
+   - Instalación de servicios maliciosos disfrazados
+   - **Conexiones persistentes** para acceso remoto continuo
+   - **Usuarios sigilosos** con nombres y contraseñas realistas
 
 5. **Escalada de Privilegios**
    - Dump de hashes con Mimikatz
@@ -64,6 +66,9 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
 - **Evidencia Automática**: Captura y almacenamiento de evidencia
 - **Reportes Detallados**: Generación automática de reportes
 - **Manejo de Errores**: Recuperación robusta ante fallos
+- **🕵️ Modo Sigiloso**: Técnicas de persistencia disfrazadas y realistas
+- **🔗 Conexiones Persistentes**: Acceso remoto continuo y automático
+- **👤 Usuarios Sigilosos**: Nombres y contraseñas que pasan desapercibidos
 
 ## Requisitos del Sistema
 
@@ -263,6 +268,51 @@ python3 network_info.py
 - `confirm_actions`: Solicitar confirmación antes de acciones críticas
 - `backup_before_changes`: Crear respaldos antes de cambios
 - `max_concurrent_scans`: Máximo número de escaneos concurrentes
+
+#### stealth_mode (Nuevo)
+- `stealth_mode`: Habilitar modo sigiloso para persistencia
+- `stealth_users`: Usuarios con nombres realistas por sistema operativo
+- `stealth_passwords`: Contraseñas creíbles y difíciles de detectar
+- `persistent_connections`: Configuración de conexiones persistentes
+- `stealth_names`: Nombres disfrazados para servicios y tareas
+
+## 🕵️ Características Sigilosas
+
+### Modo Sigiloso Avanzado
+
+El sistema ahora incluye un **modo sigiloso** que hace que las técnicas de persistencia sean mucho más difíciles de detectar por equipos de seguridad:
+
+#### 👤 Usuarios Sigilosos
+- **Windows**: `svc_windowsupdate`, `svc_systemmaintenance`, `svc_networkmonitor`
+- **Linux**: `svc_loganalyzer`, `svc_systemmonitor`, `svc_networkcheck`
+- **Contraseñas realistas**: `W1nd0ws_Upd@te_2024!`, `Syst3m_M@int3n@nce_2024!`
+
+#### 🔧 Servicios Disfrazados
+- **Windows**: `WindowsUpdateService` (usa `wuauclt.exe`)
+- **Linux**: `system-monitor` (monitoreo del sistema)
+- **Tareas programadas**: `WindowsUpdateService` (ejecuta a las 3:00 AM)
+
+#### 🔗 Conexiones Persistentes
+- **SSH**: Conexión reversa cada 60 segundos
+- **RDP**: Verificación de conectividad cada 5 minutos
+- **Web**: Heartbeat HTTP cada 5 minutos
+- **Reconexión automática** si se pierde la conexión
+
+#### 📁 Archivos y Rutas Sigilosas
+- **Windows**: `C:\Windows\System32\WindowsUpdate.ps1`
+- **Linux**: `/usr/local/bin/system-monitor.sh`
+- **Logs**: `/tmp/.network_monitor.pid`
+- **Cron**: Tareas de mantenimiento del sistema
+
+### 🎯 Desafío para Equipos de Seguridad
+
+Estas características están diseñadas para crear un **desafío realista** donde los equipos de seguridad deben:
+
+1. **Detectar usuarios sospechosos** entre cuentas legítimas
+2. **Identificar servicios maliciosos** disfrazados como legítimos
+3. **Encontrar conexiones persistentes** ocultas en el tráfico normal
+4. **Localizar archivos maliciosos** en rutas del sistema
+5. **Analizar logs del sistema** para encontrar actividad sospechosa
 
 ## Uso
 
@@ -603,6 +653,14 @@ Este proyecto está bajo la Licencia MIT. Ver archivo LICENSE para más detalles
 - **Seguridad**: Reportar vulnerabilidades de forma responsable
 
 ## Changelog
+
+### Versión 1.1.0 (Actual)
+- **🕵️ Modo Sigiloso**: Técnicas de persistencia disfrazadas y realistas
+- **🔗 Conexiones Persistentes**: Acceso remoto continuo y automático
+- **👤 Usuarios Sigilosos**: Nombres y contraseñas que pasan desapercibidos
+- **🔧 Servicios Disfrazados**: Servicios maliciosos con nombres legítimos
+- **📁 Rutas Sigilosas**: Archivos en ubicaciones del sistema operativo
+- **🎯 Desafío Realista**: Mayor dificultad para equipos de seguridad
 
 ### Versión 1.0.0
 - Implementación inicial del sistema

