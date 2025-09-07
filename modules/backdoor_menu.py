@@ -88,32 +88,31 @@ class BackdoorMenu:
         
         print(f"{Colors.BLUE}Seleccione el log desde el cual cargar backdoors:{Colors.END}\n")
         
-        # Buscar logs disponibles
+        # Buscar escaneos disponibles
         logs = []
         
-        # Buscar en logs de evidencia
-        evidence_logs = Path("evidence/logs")
-        if evidence_logs.exists():
-            for log_file in evidence_logs.glob("*.log"):
-                logs.append(str(log_file))
-        
-        # Buscar en evidencia de persistencia
-        persistence_evidence = Path("evidence/persistence")
-        if persistence_evidence.exists():
-            for evidence_file in persistence_evidence.glob("*.json"):
-                logs.append(str(evidence_file))
-        
-        # Buscar en evidencia de IoT
-        iot_evidence = Path("evidence/iot_exploitation")
-        if iot_evidence.exists():
-            for evidence_file in iot_evidence.glob("*.json"):
-                logs.append(str(evidence_file))
-        
-        # Buscar en evidencia de SQL
-        sql_evidence = Path("evidence/sql_exfiltration")
-        if sql_evidence.exists():
-            for evidence_file in sql_evidence.glob("*.json"):
-                logs.append(str(evidence_file))
+        # Buscar en directorios de escaneos
+        scans_dir = Path("scans")
+        if scans_dir.exists():
+            for scan_dir in scans_dir.iterdir():
+                if not scan_dir.is_dir():
+                    continue
+                    
+                # Agregar el directorio del escaneo
+                logs.append(f"scan:{scan_dir.name}")
+                
+                # Buscar evidencia específica en cada escaneo
+                persistence_evidence = scan_dir / "evidence" / "persistence.json"
+                if persistence_evidence.exists():
+                    logs.append(str(persistence_evidence))
+                
+                iot_evidence = scan_dir / "evidence" / "iot_exploitation.json"
+                if iot_evidence.exists():
+                    logs.append(str(iot_evidence))
+                
+                sql_evidence = scan_dir / "evidence" / "sql_exfiltration.json"
+                if sql_evidence.exists():
+                    logs.append(str(sql_evidence))
         
         if not logs:
             print(f"{Colors.RED}❌ No se encontraron logs disponibles{Colors.END}")

@@ -21,8 +21,8 @@ class BackdoorManagementModule:
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
         
-        # Directorio de evidencia
-        self.evidence_dir = Path("evidence/backdoor_management")
+        # Directorio de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/backdoor_management")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         
         # Archivo de gestión de backdoors
@@ -115,7 +115,7 @@ class BackdoorManagementModule:
             return {'stdout': '', 'stderr': str(e), 'return_code': -1, 'success': False}
     
     def discover_existing_backdoors(self, log_file: str = None, scan_id: str = None) -> List[Dict[str, Any]]:
-        """Descubrir backdoors existentes desde logs específicos o escaneos"""
+        """Descubrir backdoors existentes desde escaneos específicos o todos los escaneos"""
         self.logger.info("🔍 DESCUBRIENDO BACKDOORS EXISTENTES")
         
         backdoors = []
@@ -125,11 +125,17 @@ class BackdoorManagementModule:
             self.logger.info(f"📂 Cargando backdoors desde escaneo: {scan_id}")
             backdoors = self._load_backdoors_from_scan(scan_id)
         elif log_file:
-            # Usar log específico proporcionado
-            self.logger.info(f"📂 Cargando backdoors desde log: {log_file}")
-            backdoors = self._load_backdoors_from_log(log_file)
+            # Si log_file es un directorio de escaneo, tratarlo como scan_id
+            if Path(log_file).is_dir():
+                scan_id = Path(log_file).name
+                self.logger.info(f"📂 Cargando backdoors desde directorio de escaneo: {scan_id}")
+                backdoors = self._load_backdoors_from_scan(scan_id)
+            else:
+                # Usar log específico proporcionado
+                self.logger.info(f"📂 Cargando backdoors desde log: {log_file}")
+                backdoors = self._load_backdoors_from_log(log_file)
         else:
-            # Buscar en todos los logs disponibles
+            # Buscar en todos los escaneos disponibles
             backdoors = self._discover_backdoors_from_all_logs()
         
         self.active_backdoors["backdoors"] = backdoors
@@ -306,36 +312,42 @@ class BackdoorManagementModule:
         return backdoors
     
     def _discover_backdoors_from_all_logs(self) -> List[Dict[str, Any]]:
-        """Descubrir backdoors desde todos los logs disponibles"""
+        """Descubrir backdoors desde todos los escaneos disponibles"""
         backdoors = []
         
-        # Buscar en logs de persistencia
-        persistence_logs = Path("evidence/logs")
-        if persistence_logs.exists():
-            for log_file in persistence_logs.glob("*.log"):
-                log_backdoors = self._parse_log_file(str(log_file))
-                backdoors.extend(log_backdoors)
+        # Buscar en directorios de escaneos
+        scans_dir = Path("scans")
+        if not scans_dir.exists():
+            return backdoors
         
-        # Buscar en evidencia de persistencia
-        persistence_evidence = Path("evidence/persistence")
-        if persistence_evidence.exists():
-            for evidence_file in persistence_evidence.glob("*.json"):
-                evidence_backdoors = self._parse_evidence_file(str(evidence_file))
+        for scan_dir in scans_dir.iterdir():
+            if not scan_dir.is_dir():
+                continue
+                
+            # Buscar evidencia de persistencia en cada escaneo
+            persistence_evidence = scan_dir / "evidence" / "persistence.json"
+            if persistence_evidence.exists():
+                evidence_backdoors = self._parse_evidence_file(str(persistence_evidence))
                 backdoors.extend(evidence_backdoors)
-        
-        # Buscar en evidencia de IoT
-        iot_evidence = Path("evidence/iot_exploitation")
-        if iot_evidence.exists():
-            for evidence_file in iot_evidence.glob("*.json"):
-                evidence_backdoors = self._parse_evidence_file(str(evidence_file))
+            
+            # Buscar evidencia de IoT en cada escaneo
+            iot_evidence = scan_dir / "evidence" / "iot_exploitation.json"
+            if iot_evidence.exists():
+                evidence_backdoors = self._parse_evidence_file(str(iot_evidence))
                 backdoors.extend(evidence_backdoors)
-        
-        # Buscar en evidencia de SQL
-        sql_evidence = Path("evidence/sql_exfiltration")
-        if sql_evidence.exists():
-            for evidence_file in sql_evidence.glob("*.json"):
-                evidence_backdoors = self._parse_evidence_file(str(evidence_file))
+            
+            # Buscar evidencia de SQL en cada escaneo
+            sql_evidence = scan_dir / "evidence" / "sql_exfiltration.json"
+            if sql_evidence.exists():
+                evidence_backdoors = self._parse_evidence_file(str(sql_evidence))
                 backdoors.extend(evidence_backdoors)
+            
+            # Buscar en logs de consola
+            console_logs = scan_dir / "console"
+            if console_logs.exists():
+                for log_file in console_logs.glob("*.log"):
+                    log_backdoors = self._parse_log_file(str(log_file))
+                    backdoors.extend(log_backdoors)
         
         return backdoors
     

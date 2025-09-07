@@ -122,11 +122,17 @@ function displayScanDetails(scan) {
     // Display IoT devices
     displayIoTDevices(scan);
     
+    // Display SQL reconnaissance
+    displaySQLReconnaissance(scan);
+    
     // Display database connections
     displayDatabaseConnections(scan);
     
     // Display exfiltrated data
     displayExfiltratedData(scan);
+    
+    // Display post execution tasks
+    displayPostExecutionTasks(scan);
     
     // Display network map
     displayNetworkMap(scan);
@@ -642,7 +648,22 @@ function getIoTDevicesFromScan(scan) {
 
 function getDatabasesFromScan(scan) {
     const results = scan.results || {};
-    return results.sql_exfiltration?.remote_connections || [];
+    const sqlRecon = scan.sql_reconnaissance || {};
+    
+    // Combinar datos de reconocimiento SQL y exfiltración
+    let databases = [];
+    
+    // Desde reconocimiento SQL
+    if (sqlRecon.sql_reconnaissance_results?.databases_discovered) {
+        databases.push(...sqlRecon.sql_reconnaissance_results.databases_discovered);
+    }
+    
+    // Desde exfiltración SQL
+    if (results.sql_exfiltration?.remote_connections) {
+        databases.push(...results.sql_exfiltration.remote_connections);
+    }
+    
+    return databases;
 }
 
 function getExfiltratedDataFromScan(scan) {
@@ -653,6 +674,16 @@ function getExfiltratedDataFromScan(scan) {
 function getNetworkDataFromScan(scan) {
     const results = scan.results || {};
     return results.advanced_reconnaissance?.topology?.network_segments || [];
+}
+
+function getSQLReconnaissanceData(scan) {
+    const sqlRecon = scan.sql_reconnaissance || {};
+    return sqlRecon.sql_reconnaissance_results || {};
+}
+
+function getPostExecutionData(scan) {
+    const postExec = scan.post_execution || {};
+    return postExec;
 }
 
 // Modal functions
@@ -675,4 +706,194 @@ function showCredentialModal(title, content) {
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalContent').innerHTML = content;
     document.getElementById('credentialModal').style.display = 'block';
+}
+
+// Display SQL reconnaissance data
+function displaySQLReconnaissance(scan) {
+    const sqlReconData = getSQLReconnaissanceData(scan);
+    const sqlReconContent = document.getElementById('sqlReconContent');
+    const sqlReconSection = document.getElementById('sqlReconSection');
+    
+    if (!sqlReconData || Object.keys(sqlReconData).length === 0) {
+        sqlReconSection.style.display = 'none';
+        return;
+    }
+    
+    sqlReconSection.style.display = 'block';
+    
+    let html = '<div class="sql-recon-grid">';
+    
+    // Databases discovered
+    if (sqlReconData.databases_discovered && sqlReconData.databases_discovered.length > 0) {
+        html += '<div class="sql-recon-item">';
+        html += '<h3><i class="fas fa-database"></i> Bases de Datos Descubiertas</h3>';
+        html += '<div class="database-list">';
+        
+        sqlReconData.databases_discovered.forEach(db => {
+            const statusClass = db.accessible ? 'accessible' : 'inaccessible';
+            const statusIcon = db.accessible ? '✅' : '❌';
+            
+            html += `
+                <div class="database-item ${statusClass}">
+                    <div class="database-header">
+                        <span class="database-type">${db.type.toUpperCase()}</span>
+                        <span class="database-status">${statusIcon} ${db.accessible ? 'Accesible' : 'No accesible'}</span>
+                    </div>
+                    <div class="database-details">
+                        <p><strong>Host:</strong> ${db.host}:${db.port}</p>
+                        <p><strong>Versión:</strong> ${db.version}</p>
+                        <p><strong>Banner:</strong> ${db.banner}</p>
+                        ${db.info_gathered ? `<p><strong>Info obtenida:</strong> ${db.info_gathered.join(', ')}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+    }
+    
+    // Accessible databases
+    if (sqlReconData.accessible_databases && sqlReconData.accessible_databases.length > 0) {
+        html += '<div class="sql-recon-item">';
+        html += '<h3><i class="fas fa-key"></i> Bases de Datos Accesibles</h3>';
+        html += '<div class="accessible-databases">';
+        
+        sqlReconData.accessible_databases.forEach(db => {
+            html += `
+                <div class="accessible-db-item">
+                    <div class="db-credentials">
+                        <p><strong>Host:</strong> ${db.host}:${db.port}</p>
+                        <p><strong>Tipo:</strong> ${db.type}</p>
+                        <p><strong>Usuario:</strong> ${db.username}</p>
+                        <p><strong>Contraseña:</strong> ${db.password || '(vacía)'}</p>
+                        <p><strong>Nivel de acceso:</strong> ${db.access_level}</p>
+                        <p class="note"><em>${db.note}</em></p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+    }
+    
+    // Connection info
+    if (sqlReconData.connection_info && sqlReconData.connection_info.length > 0) {
+        html += '<div class="sql-recon-item">';
+        html += '<h3><i class="fas fa-network-wired"></i> Información de Conexión</h3>';
+        html += '<div class="connection-info">';
+        
+        sqlReconData.connection_info.forEach(conn => {
+            const statusClass = conn.status === 'accessible' ? 'success' : 'error';
+            html += `
+                <div class="connection-item ${statusClass}">
+                    <p><strong>${conn.host}:${conn.port}</strong> (${conn.type})</p>
+                    <p>Estado: ${conn.status} | Tiempo de respuesta: ${conn.response_time}s</p>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+    }
+    
+    html += '</div>';
+    
+    sqlReconContent.innerHTML = html;
+}
+
+// Display post execution tasks data
+function displayPostExecutionTasks(scan) {
+    const postExecData = getPostExecutionData(scan);
+    const postExecContent = document.getElementById('postExecutionContent');
+    const postExecSection = document.getElementById('postExecutionSection');
+    
+    if (!postExecData || Object.keys(postExecData).length === 0) {
+        postExecSection.style.display = 'none';
+        return;
+    }
+    
+    postExecSection.style.display = 'block';
+    
+    let html = '<div class="post-execution-grid">';
+    
+    // Summary of all tasks
+    if (postExecData.post_execution_summary) {
+        const summary = postExecData.post_execution_summary;
+        html += '<div class="post-exec-summary">';
+        html += '<h3><i class="fas fa-chart-bar"></i> Resumen de Ejecución</h3>';
+        html += '<div class="summary-stats">';
+        html += `<div class="stat-item"><span class="stat-label">Tareas Totales:</span> <span class="stat-value">${summary.total_tasks}</span></div>`;
+        html += `<div class="stat-item"><span class="stat-label">Completadas:</span> <span class="stat-value success">${summary.tasks_completed}</span></div>`;
+        html += `<div class="stat-item"><span class="stat-label">Fallidas:</span> <span class="stat-value error">${summary.tasks_failed}</span></div>`;
+        html += `<div class="stat-item"><span class="stat-label">Tasa de Éxito:</span> <span class="stat-value">${summary.success_rate.toFixed(1)}%</span></div>`;
+        html += `<div class="stat-item"><span class="stat-label">Tiempo Total:</span> <span class="stat-value">${summary.total_duration.toFixed(1)}s</span></div>`;
+        html += '</div></div>';
+    }
+    
+    // Individual task results
+    const taskTypes = {
+        'deep_network_scan': 'Escaneo Profundo de Red',
+        'credential_extraction': 'Extracción de Credenciales',
+        'privilege_escalation': 'Escalada de Privilegios',
+        'lateral_movement': 'Movimiento Lateral',
+        'data_exfiltration': 'Exfiltración de Datos',
+        'remote_exfiltration': 'Exfiltración Remota',
+        'persistence': 'Persistencia Avanzada',
+        'network_mapping': 'Mapeo de Red',
+        'complete_sql_injection': 'SQL Injection Completo'
+    };
+    
+    Object.keys(postExecData).forEach(taskKey => {
+        if (taskKey === 'post_execution_summary') return;
+        
+        const taskData = postExecData[taskKey];
+        const taskName = taskTypes[taskKey] || taskKey;
+        
+        html += '<div class="post-exec-task">';
+        html += `<h3><i class="fas fa-tasks"></i> ${taskName}</h3>`;
+        html += '<div class="task-details">';
+        
+        if (taskData.timestamp) {
+            html += `<p><strong>Ejecutado:</strong> ${formatDate(new Date(taskData.timestamp * 1000).toISOString())}</p>`;
+        }
+        
+        // Show specific results based on task type
+        if (taskKey === 'complete_sql_injection') {
+            if (taskData.sql_injections && taskData.sql_injections.length > 0) {
+                html += `<p><strong>SQL Injections:</strong> ${taskData.sql_injections.length} encontrados</p>`;
+            }
+            if (taskData.exfiltrated_data && taskData.exfiltrated_data.length > 0) {
+                html += `<p><strong>Bases de Datos Exfiltradas:</strong> ${taskData.exfiltrated_data.length}</p>`;
+            }
+        } else if (taskKey === 'deep_network_scan') {
+            if (taskData.hosts_scanned) {
+                html += `<p><strong>Hosts Escaneados:</strong> ${taskData.hosts_scanned}</p>`;
+            }
+            if (taskData.ports_found) {
+                html += `<p><strong>Puertos Encontrados:</strong> ${taskData.ports_found}</p>`;
+            }
+        } else if (taskKey === 'credential_extraction') {
+            if (taskData.credentials_extracted) {
+                html += `<p><strong>Credenciales Extraídas:</strong> ${taskData.credentials_extracted}</p>`;
+            }
+        } else if (taskKey === 'data_exfiltration') {
+            if (taskData.data_size) {
+                html += `<p><strong>Tamaño de Datos:</strong> ${formatBytes(taskData.data_size)}</p>`;
+            }
+        }
+        
+        html += '</div></div>';
+    });
+    
+    html += '</div>';
+    
+    postExecContent.innerHTML = html;
+}
+
+// Helper function to format bytes
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

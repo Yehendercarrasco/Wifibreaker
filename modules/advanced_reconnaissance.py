@@ -35,8 +35,8 @@ class AdvancedReconnaissanceModule:
             'timestamp': time.time()
         }
         
-        # Directorio de evidencia
-        self.evidence_dir = Path("evidence/advanced_reconnaissance")
+        # Directorio de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/advanced_reconnaissance")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         
         # Obtener IP del router automáticamente

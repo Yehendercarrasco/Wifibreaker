@@ -36,8 +36,8 @@ class ExfiltrationModule:
             'permissions_denied': []
         }
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/exfiltration")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/exfiltration")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         
         # Configuración de gestión

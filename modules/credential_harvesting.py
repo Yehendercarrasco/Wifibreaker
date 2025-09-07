@@ -39,8 +39,8 @@ class CredentialModule:
         # Procesos en background
         self.background_processes = {}
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/credentials")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/credentials")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
     
     def _run_command(self, command: List[str], timeout: int = 300, background: bool = False) -> Dict[str, Any]:

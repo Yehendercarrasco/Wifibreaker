@@ -32,7 +32,7 @@ class LoggingSystem:
         self.config = config
         self.logger = logger
         self.log_config = config.get('logging', {})
-        self.evidence_dir = Path("evidence")
+        self.evidence_dir = Path("scans")
         self.screenshots_dir = self.evidence_dir / "screenshots"
         self.logs_dir = self.evidence_dir / "logs"
         self.data_dir = self.evidence_dir / "data"

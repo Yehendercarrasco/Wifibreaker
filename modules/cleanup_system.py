@@ -188,13 +188,13 @@ class CleanupSystem:
         """Limpiar archivos temporales"""
         self.logger.info("🧹 Limpiando archivos temporales...")
         
-        # Limpiar archivos de evidencia
+        # Limpiar archivos de evidencia (ahora en scans/)
         evidence_files = [
-            "evidence/reconnaissance",
-            "evidence/lateral_movement",
-            "evidence/persistence",
-            "evidence/iot_exploitation",
-            "evidence/sql_exfiltration"
+            "scans/reconnaissance",
+            "scans/lateral_movement",
+            "scans/persistence",
+            "scans/iot_exploitation",
+            "scans/sql_reconnaissance"
         ]
         
         for evidence_dir in evidence_files:

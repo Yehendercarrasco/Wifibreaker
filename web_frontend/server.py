@@ -121,6 +121,32 @@ class PentestReportHandler(BaseHTTPRequestHandler):
                     except Exception as e:
                         print(f"Error leyendo evidencia {phase_file}: {e}")
             
+            # Cargar datos de reconocimiento SQL si existen
+            sql_recon_dir = self.base_dir / "scans" / "sql_reconnaissance"
+            if sql_recon_dir.exists():
+                sql_data = {}
+                for sql_file in sql_recon_dir.glob("*.json"):
+                    try:
+                        with open(sql_file, 'r', encoding='utf-8') as f:
+                            sql_data[sql_file.stem] = json.load(f)
+                    except Exception as e:
+                        print(f"Error leyendo datos SQL {sql_file}: {e}")
+                        continue
+                scan_info['sql_reconnaissance'] = sql_data
+            
+            # Cargar datos de tareas post-ejecución si existen
+            post_exec_dir = self.base_dir / "scans" / "post_execution"
+            if post_exec_dir.exists():
+                post_exec_data = {}
+                for post_exec_file in post_exec_dir.glob("*.json"):
+                    try:
+                        with open(post_exec_file, 'r', encoding='utf-8') as f:
+                            post_exec_data[post_exec_file.stem] = json.load(f)
+                    except Exception as e:
+                        print(f"Error leyendo datos post-ejecución {post_exec_file}: {e}")
+                        continue
+                scan_info['post_execution'] = post_exec_data
+            
             self.send_json_response(scan_info)
             
         except Exception as e:

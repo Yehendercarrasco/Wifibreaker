@@ -30,8 +30,8 @@ class PostExecutionTasksModule:
             'timestamp': time.time()
         }
         
-        # Directorio de evidencia
-        self.evidence_dir = Path("evidence/post_execution")
+        # Directorio de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/post_execution")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
     
     def run_post_execution_menu(self) -> Dict[str, Any]:
@@ -42,7 +42,7 @@ class PostExecutionTasksModule:
             self._display_post_execution_menu()
             
             try:
-                choice = input(f"{Colors.YELLOW}Seleccione una tarea (1-9): {Colors.END}").strip()
+                choice = input(f"{Colors.YELLOW}Seleccione una tarea (1-11): {Colors.END}").strip()
                 
                 if choice == '1':
                     self._run_deep_network_scan()
@@ -61,6 +61,10 @@ class PostExecutionTasksModule:
                 elif choice == '8':
                     self._run_network_mapping()
                 elif choice == '9':
+                    self._run_complete_sql_injection()
+                elif choice == '10':
+                    self._run_all_post_execution_tasks()
+                elif choice == '11':
                     break
                 else:
                     print(f"{Colors.RED}❌ Opción inválida{Colors.END}")
@@ -100,7 +104,13 @@ class PostExecutionTasksModule:
         print(f"{Colors.CYAN}8. 🗺️ Mapeo completo de red{Colors.END}")
         print(f"   {Colors.WHITE}Topología detallada, relaciones entre sistemas{Colors.END}")
         
-        print(f"{Colors.CYAN}9. ❌ Volver{Colors.END}")
+        print(f"{Colors.CYAN}9. 🗄️ SQL Injection completo{Colors.END}")
+        print(f"   {Colors.WHITE}SQL injection avanzado, exfiltración de bases de datos{Colors.END}")
+        
+        print(f"{Colors.CYAN}10. 🚀 Ejecutar todas las tareas{Colors.END}")
+        print(f"   {Colors.WHITE}Ejecutar todas las tareas post-ejecución secuencialmente{Colors.END}")
+        
+        print(f"{Colors.CYAN}11. ❌ Volver{Colors.END}")
     
     def _run_deep_network_scan(self) -> None:
         """Ejecutar escaneo profundo de red"""
@@ -432,8 +442,8 @@ class PostExecutionTasksModule:
         """Cargar hosts desde logs"""
         hosts = []
         
-        # Buscar en logs de reconocimiento
-        recon_logs = Path("evidence/reconnaissance")
+        # Buscar en logs de reconocimiento (ahora en scans/)
+        recon_logs = Path("scans/reconnaissance")
         if recon_logs.exists():
             for log_file in recon_logs.glob("*.json"):
                 try:
@@ -450,8 +460,8 @@ class PostExecutionTasksModule:
         """Cargar sistemas comprometidos desde logs"""
         systems = []
         
-        # Buscar en logs de movimiento lateral
-        lateral_logs = Path("evidence/lateral_movement")
+        # Buscar en logs de movimiento lateral (ahora en scans/)
+        lateral_logs = Path("scans/lateral_movement")
         if lateral_logs.exists():
             for log_file in lateral_logs.glob("*.json"):
                 try:
@@ -762,6 +772,91 @@ class PostExecutionTasksModule:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
+    def _run_complete_sql_injection(self) -> None:
+        """Ejecutar SQL injection completo y exfiltración de bases de datos"""
+        self.logger.info("🗄️ INICIANDO SQL INJECTION COMPLETO")
+        
+        try:
+            from modules.complete_sql_injection import CompleteSQLInjectionModule
+            
+            sql_module = CompleteSQLInjectionModule(self.config, self.logger)
+            sql_results = sql_module.run_complete_sql_injection()
+            
+            self._save_evidence('complete_sql_injection', sql_results)
+            
+            self.logger.info("✅ SQL injection completo finalizado")
+            self.logger.info(f"📊 Resumen: {len(sql_results.get('sql_injections', []))} SQL injections, {len(sql_results.get('exfiltrated_data', []))} bases de datos exfiltradas")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error en SQL injection completo: {e}")
+    
+    def _run_all_post_execution_tasks(self) -> None:
+        """Ejecutar todas las tareas post-ejecución secuencialmente"""
+        self.logger.info("🚀 INICIANDO EJECUCIÓN DE TODAS LAS TAREAS POST-EJECUCIÓN")
+        
+        start_time = time.time()
+        tasks_completed = 0
+        tasks_failed = 0
+        
+        # Lista de todas las tareas a ejecutar
+        tasks = [
+            ("Escaneo profundo de red", self._run_deep_network_scan),
+            ("Extracción avanzada de credenciales", self._run_credential_extraction),
+            ("Escalada de privilegios avanzada", self._run_privilege_escalation),
+            ("Movimiento lateral avanzado", self._run_advanced_lateral_movement),
+            ("Exfiltración comprehensiva de datos", self._run_comprehensive_data_exfiltration),
+            ("Exfiltración remota a servidor C2", self._run_remote_exfiltration),
+            ("Persistencia avanzada", self._run_advanced_persistence),
+            ("Mapeo completo de red", self._run_network_mapping),
+            ("SQL Injection completo", self._run_complete_sql_injection)
+        ]
+        
+        print(f"\n{Colors.BLUE}📋 EJECUTANDO {len(tasks)} TAREAS POST-EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}Esto puede tomar varios minutos...{Colors.END}\n")
+        
+        for i, (task_name, task_function) in enumerate(tasks, 1):
+            try:
+                print(f"{Colors.CYAN}[{i}/{len(tasks)}] {task_name}...{Colors.END}")
+                task_start = time.time()
+                
+                # Ejecutar la tarea
+                task_function()
+                
+                task_duration = time.time() - task_start
+                tasks_completed += 1
+                print(f"{Colors.GREEN}✅ {task_name} completado en {task_duration:.1f}s{Colors.END}\n")
+                
+            except Exception as e:
+                tasks_failed += 1
+                self.logger.error(f"❌ Error en {task_name}: {e}")
+                print(f"{Colors.RED}❌ {task_name} falló: {e}{Colors.END}\n")
+                continue
+        
+        # Resumen final
+        total_duration = time.time() - start_time
+        
+        print(f"{Colors.BLUE}📊 RESUMEN DE EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}⏱️  Tiempo total: {total_duration:.1f} segundos{Colors.END}")
+        print(f"{Colors.GREEN}✅ Tareas completadas: {tasks_completed}{Colors.END}")
+        print(f"{Colors.RED}❌ Tareas fallidas: {tasks_failed}{Colors.END}")
+        print(f"{Colors.WHITE}📈 Tasa de éxito: {(tasks_completed/(tasks_completed+tasks_failed)*100):.1f}%{Colors.END}")
+        
+        # Guardar resumen de ejecución
+        execution_summary = {
+            'total_tasks': len(tasks),
+            'tasks_completed': tasks_completed,
+            'tasks_failed': tasks_failed,
+            'success_rate': (tasks_completed/(tasks_completed+tasks_failed)*100) if (tasks_completed+tasks_failed) > 0 else 0,
+            'total_duration': total_duration,
+            'start_time': start_time,
+            'end_time': time.time(),
+            'timestamp': time.time()
+        }
+        
+        self._save_evidence('post_execution_summary', execution_summary)
+        
+        self.logger.info(f"✅ Ejecución de tareas post-ejecución finalizada: {tasks_completed}/{len(tasks)} completadas")
+    
     def _transfer_with_scp(self, local_dir: Path, server: str, user: str, 
                           password: str, remote_path: str) -> Dict[str, Any]:
         """Transferir datos con SCP"""
@@ -796,6 +891,91 @@ class PostExecutionTasksModule:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
+    def _run_complete_sql_injection(self) -> None:
+        """Ejecutar SQL injection completo y exfiltración de bases de datos"""
+        self.logger.info("🗄️ INICIANDO SQL INJECTION COMPLETO")
+        
+        try:
+            from modules.complete_sql_injection import CompleteSQLInjectionModule
+            
+            sql_module = CompleteSQLInjectionModule(self.config, self.logger)
+            sql_results = sql_module.run_complete_sql_injection()
+            
+            self._save_evidence('complete_sql_injection', sql_results)
+            
+            self.logger.info("✅ SQL injection completo finalizado")
+            self.logger.info(f"📊 Resumen: {len(sql_results.get('sql_injections', []))} SQL injections, {len(sql_results.get('exfiltrated_data', []))} bases de datos exfiltradas")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error en SQL injection completo: {e}")
+    
+    def _run_all_post_execution_tasks(self) -> None:
+        """Ejecutar todas las tareas post-ejecución secuencialmente"""
+        self.logger.info("🚀 INICIANDO EJECUCIÓN DE TODAS LAS TAREAS POST-EJECUCIÓN")
+        
+        start_time = time.time()
+        tasks_completed = 0
+        tasks_failed = 0
+        
+        # Lista de todas las tareas a ejecutar
+        tasks = [
+            ("Escaneo profundo de red", self._run_deep_network_scan),
+            ("Extracción avanzada de credenciales", self._run_credential_extraction),
+            ("Escalada de privilegios avanzada", self._run_privilege_escalation),
+            ("Movimiento lateral avanzado", self._run_advanced_lateral_movement),
+            ("Exfiltración comprehensiva de datos", self._run_comprehensive_data_exfiltration),
+            ("Exfiltración remota a servidor C2", self._run_remote_exfiltration),
+            ("Persistencia avanzada", self._run_advanced_persistence),
+            ("Mapeo completo de red", self._run_network_mapping),
+            ("SQL Injection completo", self._run_complete_sql_injection)
+        ]
+        
+        print(f"\n{Colors.BLUE}📋 EJECUTANDO {len(tasks)} TAREAS POST-EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}Esto puede tomar varios minutos...{Colors.END}\n")
+        
+        for i, (task_name, task_function) in enumerate(tasks, 1):
+            try:
+                print(f"{Colors.CYAN}[{i}/{len(tasks)}] {task_name}...{Colors.END}")
+                task_start = time.time()
+                
+                # Ejecutar la tarea
+                task_function()
+                
+                task_duration = time.time() - task_start
+                tasks_completed += 1
+                print(f"{Colors.GREEN}✅ {task_name} completado en {task_duration:.1f}s{Colors.END}\n")
+                
+            except Exception as e:
+                tasks_failed += 1
+                self.logger.error(f"❌ Error en {task_name}: {e}")
+                print(f"{Colors.RED}❌ {task_name} falló: {e}{Colors.END}\n")
+                continue
+        
+        # Resumen final
+        total_duration = time.time() - start_time
+        
+        print(f"{Colors.BLUE}📊 RESUMEN DE EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}⏱️  Tiempo total: {total_duration:.1f} segundos{Colors.END}")
+        print(f"{Colors.GREEN}✅ Tareas completadas: {tasks_completed}{Colors.END}")
+        print(f"{Colors.RED}❌ Tareas fallidas: {tasks_failed}{Colors.END}")
+        print(f"{Colors.WHITE}📈 Tasa de éxito: {(tasks_completed/(tasks_completed+tasks_failed)*100):.1f}%{Colors.END}")
+        
+        # Guardar resumen de ejecución
+        execution_summary = {
+            'total_tasks': len(tasks),
+            'tasks_completed': tasks_completed,
+            'tasks_failed': tasks_failed,
+            'success_rate': (tasks_completed/(tasks_completed+tasks_failed)*100) if (tasks_completed+tasks_failed) > 0 else 0,
+            'total_duration': total_duration,
+            'start_time': start_time,
+            'end_time': time.time(),
+            'timestamp': time.time()
+        }
+        
+        self._save_evidence('post_execution_summary', execution_summary)
+        
+        self.logger.info(f"✅ Ejecución de tareas post-ejecución finalizada: {tasks_completed}/{len(tasks)} completadas")
+    
     def _transfer_with_rsync(self, local_dir: Path, server: str, user: str, 
                             password: str, remote_path: str) -> Dict[str, Any]:
         """Transferir datos con RSYNC"""
@@ -824,6 +1004,91 @@ class PostExecutionTasksModule:
                 
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def _run_complete_sql_injection(self) -> None:
+        """Ejecutar SQL injection completo y exfiltración de bases de datos"""
+        self.logger.info("🗄️ INICIANDO SQL INJECTION COMPLETO")
+        
+        try:
+            from modules.complete_sql_injection import CompleteSQLInjectionModule
+            
+            sql_module = CompleteSQLInjectionModule(self.config, self.logger)
+            sql_results = sql_module.run_complete_sql_injection()
+            
+            self._save_evidence('complete_sql_injection', sql_results)
+            
+            self.logger.info("✅ SQL injection completo finalizado")
+            self.logger.info(f"📊 Resumen: {len(sql_results.get('sql_injections', []))} SQL injections, {len(sql_results.get('exfiltrated_data', []))} bases de datos exfiltradas")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error en SQL injection completo: {e}")
+    
+    def _run_all_post_execution_tasks(self) -> None:
+        """Ejecutar todas las tareas post-ejecución secuencialmente"""
+        self.logger.info("🚀 INICIANDO EJECUCIÓN DE TODAS LAS TAREAS POST-EJECUCIÓN")
+        
+        start_time = time.time()
+        tasks_completed = 0
+        tasks_failed = 0
+        
+        # Lista de todas las tareas a ejecutar
+        tasks = [
+            ("Escaneo profundo de red", self._run_deep_network_scan),
+            ("Extracción avanzada de credenciales", self._run_credential_extraction),
+            ("Escalada de privilegios avanzada", self._run_privilege_escalation),
+            ("Movimiento lateral avanzado", self._run_advanced_lateral_movement),
+            ("Exfiltración comprehensiva de datos", self._run_comprehensive_data_exfiltration),
+            ("Exfiltración remota a servidor C2", self._run_remote_exfiltration),
+            ("Persistencia avanzada", self._run_advanced_persistence),
+            ("Mapeo completo de red", self._run_network_mapping),
+            ("SQL Injection completo", self._run_complete_sql_injection)
+        ]
+        
+        print(f"\n{Colors.BLUE}📋 EJECUTANDO {len(tasks)} TAREAS POST-EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}Esto puede tomar varios minutos...{Colors.END}\n")
+        
+        for i, (task_name, task_function) in enumerate(tasks, 1):
+            try:
+                print(f"{Colors.CYAN}[{i}/{len(tasks)}] {task_name}...{Colors.END}")
+                task_start = time.time()
+                
+                # Ejecutar la tarea
+                task_function()
+                
+                task_duration = time.time() - task_start
+                tasks_completed += 1
+                print(f"{Colors.GREEN}✅ {task_name} completado en {task_duration:.1f}s{Colors.END}\n")
+                
+            except Exception as e:
+                tasks_failed += 1
+                self.logger.error(f"❌ Error en {task_name}: {e}")
+                print(f"{Colors.RED}❌ {task_name} falló: {e}{Colors.END}\n")
+                continue
+        
+        # Resumen final
+        total_duration = time.time() - start_time
+        
+        print(f"{Colors.BLUE}📊 RESUMEN DE EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}⏱️  Tiempo total: {total_duration:.1f} segundos{Colors.END}")
+        print(f"{Colors.GREEN}✅ Tareas completadas: {tasks_completed}{Colors.END}")
+        print(f"{Colors.RED}❌ Tareas fallidas: {tasks_failed}{Colors.END}")
+        print(f"{Colors.WHITE}📈 Tasa de éxito: {(tasks_completed/(tasks_completed+tasks_failed)*100):.1f}%{Colors.END}")
+        
+        # Guardar resumen de ejecución
+        execution_summary = {
+            'total_tasks': len(tasks),
+            'tasks_completed': tasks_completed,
+            'tasks_failed': tasks_failed,
+            'success_rate': (tasks_completed/(tasks_completed+tasks_failed)*100) if (tasks_completed+tasks_failed) > 0 else 0,
+            'total_duration': total_duration,
+            'start_time': start_time,
+            'end_time': time.time(),
+            'timestamp': time.time()
+        }
+        
+        self._save_evidence('post_execution_summary', execution_summary)
+        
+        self.logger.info(f"✅ Ejecución de tareas post-ejecución finalizada: {tasks_completed}/{len(tasks)} completadas")
     
     def _transfer_with_ftp(self, local_dir: Path, server: str, user: str, 
                           password: str, remote_path: str) -> Dict[str, Any]:
@@ -870,6 +1135,91 @@ quit
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
+    def _run_complete_sql_injection(self) -> None:
+        """Ejecutar SQL injection completo y exfiltración de bases de datos"""
+        self.logger.info("🗄️ INICIANDO SQL INJECTION COMPLETO")
+        
+        try:
+            from modules.complete_sql_injection import CompleteSQLInjectionModule
+            
+            sql_module = CompleteSQLInjectionModule(self.config, self.logger)
+            sql_results = sql_module.run_complete_sql_injection()
+            
+            self._save_evidence('complete_sql_injection', sql_results)
+            
+            self.logger.info("✅ SQL injection completo finalizado")
+            self.logger.info(f"📊 Resumen: {len(sql_results.get('sql_injections', []))} SQL injections, {len(sql_results.get('exfiltrated_data', []))} bases de datos exfiltradas")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error en SQL injection completo: {e}")
+    
+    def _run_all_post_execution_tasks(self) -> None:
+        """Ejecutar todas las tareas post-ejecución secuencialmente"""
+        self.logger.info("🚀 INICIANDO EJECUCIÓN DE TODAS LAS TAREAS POST-EJECUCIÓN")
+        
+        start_time = time.time()
+        tasks_completed = 0
+        tasks_failed = 0
+        
+        # Lista de todas las tareas a ejecutar
+        tasks = [
+            ("Escaneo profundo de red", self._run_deep_network_scan),
+            ("Extracción avanzada de credenciales", self._run_credential_extraction),
+            ("Escalada de privilegios avanzada", self._run_privilege_escalation),
+            ("Movimiento lateral avanzado", self._run_advanced_lateral_movement),
+            ("Exfiltración comprehensiva de datos", self._run_comprehensive_data_exfiltration),
+            ("Exfiltración remota a servidor C2", self._run_remote_exfiltration),
+            ("Persistencia avanzada", self._run_advanced_persistence),
+            ("Mapeo completo de red", self._run_network_mapping),
+            ("SQL Injection completo", self._run_complete_sql_injection)
+        ]
+        
+        print(f"\n{Colors.BLUE}📋 EJECUTANDO {len(tasks)} TAREAS POST-EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}Esto puede tomar varios minutos...{Colors.END}\n")
+        
+        for i, (task_name, task_function) in enumerate(tasks, 1):
+            try:
+                print(f"{Colors.CYAN}[{i}/{len(tasks)}] {task_name}...{Colors.END}")
+                task_start = time.time()
+                
+                # Ejecutar la tarea
+                task_function()
+                
+                task_duration = time.time() - task_start
+                tasks_completed += 1
+                print(f"{Colors.GREEN}✅ {task_name} completado en {task_duration:.1f}s{Colors.END}\n")
+                
+            except Exception as e:
+                tasks_failed += 1
+                self.logger.error(f"❌ Error en {task_name}: {e}")
+                print(f"{Colors.RED}❌ {task_name} falló: {e}{Colors.END}\n")
+                continue
+        
+        # Resumen final
+        total_duration = time.time() - start_time
+        
+        print(f"{Colors.BLUE}📊 RESUMEN DE EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}⏱️  Tiempo total: {total_duration:.1f} segundos{Colors.END}")
+        print(f"{Colors.GREEN}✅ Tareas completadas: {tasks_completed}{Colors.END}")
+        print(f"{Colors.RED}❌ Tareas fallidas: {tasks_failed}{Colors.END}")
+        print(f"{Colors.WHITE}📈 Tasa de éxito: {(tasks_completed/(tasks_completed+tasks_failed)*100):.1f}%{Colors.END}")
+        
+        # Guardar resumen de ejecución
+        execution_summary = {
+            'total_tasks': len(tasks),
+            'tasks_completed': tasks_completed,
+            'tasks_failed': tasks_failed,
+            'success_rate': (tasks_completed/(tasks_completed+tasks_failed)*100) if (tasks_completed+tasks_failed) > 0 else 0,
+            'total_duration': total_duration,
+            'start_time': start_time,
+            'end_time': time.time(),
+            'timestamp': time.time()
+        }
+        
+        self._save_evidence('post_execution_summary', execution_summary)
+        
+        self.logger.info(f"✅ Ejecución de tareas post-ejecución finalizada: {tasks_completed}/{len(tasks)} completadas")
+    
     def _transfer_with_http(self, local_dir: Path, server: str, user: str, 
                            password: str, remote_path: str) -> Dict[str, Any]:
         """Transferir datos con HTTP POST"""
@@ -908,3 +1258,88 @@ quit
                 
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def _run_complete_sql_injection(self) -> None:
+        """Ejecutar SQL injection completo y exfiltración de bases de datos"""
+        self.logger.info("🗄️ INICIANDO SQL INJECTION COMPLETO")
+        
+        try:
+            from modules.complete_sql_injection import CompleteSQLInjectionModule
+            
+            sql_module = CompleteSQLInjectionModule(self.config, self.logger)
+            sql_results = sql_module.run_complete_sql_injection()
+            
+            self._save_evidence('complete_sql_injection', sql_results)
+            
+            self.logger.info("✅ SQL injection completo finalizado")
+            self.logger.info(f"📊 Resumen: {len(sql_results.get('sql_injections', []))} SQL injections, {len(sql_results.get('exfiltrated_data', []))} bases de datos exfiltradas")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error en SQL injection completo: {e}")
+    
+    def _run_all_post_execution_tasks(self) -> None:
+        """Ejecutar todas las tareas post-ejecución secuencialmente"""
+        self.logger.info("🚀 INICIANDO EJECUCIÓN DE TODAS LAS TAREAS POST-EJECUCIÓN")
+        
+        start_time = time.time()
+        tasks_completed = 0
+        tasks_failed = 0
+        
+        # Lista de todas las tareas a ejecutar
+        tasks = [
+            ("Escaneo profundo de red", self._run_deep_network_scan),
+            ("Extracción avanzada de credenciales", self._run_credential_extraction),
+            ("Escalada de privilegios avanzada", self._run_privilege_escalation),
+            ("Movimiento lateral avanzado", self._run_advanced_lateral_movement),
+            ("Exfiltración comprehensiva de datos", self._run_comprehensive_data_exfiltration),
+            ("Exfiltración remota a servidor C2", self._run_remote_exfiltration),
+            ("Persistencia avanzada", self._run_advanced_persistence),
+            ("Mapeo completo de red", self._run_network_mapping),
+            ("SQL Injection completo", self._run_complete_sql_injection)
+        ]
+        
+        print(f"\n{Colors.BLUE}📋 EJECUTANDO {len(tasks)} TAREAS POST-EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}Esto puede tomar varios minutos...{Colors.END}\n")
+        
+        for i, (task_name, task_function) in enumerate(tasks, 1):
+            try:
+                print(f"{Colors.CYAN}[{i}/{len(tasks)}] {task_name}...{Colors.END}")
+                task_start = time.time()
+                
+                # Ejecutar la tarea
+                task_function()
+                
+                task_duration = time.time() - task_start
+                tasks_completed += 1
+                print(f"{Colors.GREEN}✅ {task_name} completado en {task_duration:.1f}s{Colors.END}\n")
+                
+            except Exception as e:
+                tasks_failed += 1
+                self.logger.error(f"❌ Error en {task_name}: {e}")
+                print(f"{Colors.RED}❌ {task_name} falló: {e}{Colors.END}\n")
+                continue
+        
+        # Resumen final
+        total_duration = time.time() - start_time
+        
+        print(f"{Colors.BLUE}📊 RESUMEN DE EJECUCIÓN{Colors.END}")
+        print(f"{Colors.WHITE}⏱️  Tiempo total: {total_duration:.1f} segundos{Colors.END}")
+        print(f"{Colors.GREEN}✅ Tareas completadas: {tasks_completed}{Colors.END}")
+        print(f"{Colors.RED}❌ Tareas fallidas: {tasks_failed}{Colors.END}")
+        print(f"{Colors.WHITE}📈 Tasa de éxito: {(tasks_completed/(tasks_completed+tasks_failed)*100):.1f}%{Colors.END}")
+        
+        # Guardar resumen de ejecución
+        execution_summary = {
+            'total_tasks': len(tasks),
+            'tasks_completed': tasks_completed,
+            'tasks_failed': tasks_failed,
+            'success_rate': (tasks_completed/(tasks_completed+tasks_failed)*100) if (tasks_completed+tasks_failed) > 0 else 0,
+            'total_duration': total_duration,
+            'start_time': start_time,
+            'end_time': time.time(),
+            'timestamp': time.time()
+        }
+        
+        self._save_evidence('post_execution_summary', execution_summary)
+        
+        self.logger.info(f"✅ Ejecución de tareas post-ejecución finalizada: {tasks_completed}/{len(tasks)} completadas")

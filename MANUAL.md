@@ -10,6 +10,7 @@
 6. [Troubleshooting Avanzado](#troubleshooting-avanzado)
 7. [Casos de Uso](#casos-de-uso)
 8. [Referencias Técnicas](#referencias-técnicas)
+9. [Cambios Recientes](#cambios-recientes)
 
 ## Introducción
 
@@ -895,6 +896,73 @@ crackmapexec smb 192.168.1.100 --groups
 # Enumerar shares
 crackmapexec smb 192.168.1.100 --shares
 ```
+
+## Cambios Recientes
+
+### Versión Actual - Actualizaciones Importantes
+
+#### **1. Reorganización del Sistema de Archivos**
+- **Cambio de directorio**: Todos los escaneos ahora se guardan en `scans/` en lugar de `evidence/`
+- **Estructura mejorada**: Organización más clara y consistente de archivos
+- **Compatibilidad**: El sistema mantiene compatibilidad con escaneos anteriores
+
+#### **2. Módulo SQL Actualizado**
+- **Reconocimiento básico**: El módulo SQL ahora hace solo reconocimiento básico durante el escaneo regular
+- **Sin SQL injection**: Se eliminaron los payloads de SQL injection del escaneo principal
+- **Tareas post-ejecución**: SQL injection completo disponible en tareas post-ejecución
+- **Eficiencia mejorada**: Escaneos más rápidos sin operaciones intensivas
+
+#### **3. Tareas Post-Ejecución Mejoradas**
+- **Nueva opción**: "Ejecutar todas las tareas" para ejecución secuencial
+- **SQL injection completo**: Módulo dedicado para SQL injection avanzado
+- **Resumen de ejecución**: Estadísticas detalladas de tareas completadas/fallidas
+- **Mejor logging**: Registro detallado de cada tarea ejecutada
+
+#### **4. Frontend Web Actualizado**
+- **Nueva sección**: Reconocimiento SQL con visualización de bases de datos
+- **Tareas post-ejecución**: Visualización de resultados de tareas post-ejecución
+- **Mejor organización**: Secciones más claras y organizadas
+- **Datos en tiempo real**: Carga automática de datos desde directorio `scans/`
+
+#### **5. Coherencia del Flujo de Trabajo**
+- **Paths actualizados**: Todos los módulos ahora usan `scans/` consistentemente
+- **Referencias corregidas**: Eliminadas todas las referencias a `evidence/`
+- **Compatibilidad**: Sistema funciona correctamente con la nueva estructura
+
+### Migración de Datos
+
+Si tienes escaneos anteriores en el directorio `evidence/`, puedes migrarlos:
+
+```bash
+# Crear directorio scans si no existe
+mkdir -p scans
+
+# Mover escaneos existentes
+mv evidence/* scans/ 2>/dev/null || true
+
+# El sistema detectará automáticamente los escaneos en scans/
+```
+
+### Nuevas Funcionalidades
+
+#### **Frontend Web**
+```bash
+# Iniciar servidor web
+python3 start_web_frontend.py
+
+# Acceder en navegador
+http://localhost:8080
+```
+
+#### **Tareas Post-Ejecución**
+- Opción 10: "Ejecutar todas las tareas" en el menú de tareas post-ejecución
+- Ejecución secuencial de todas las tareas con resumen detallado
+- Mejor manejo de errores y logging
+
+#### **Reconocimiento SQL**
+- Información básica de bases de datos (versión, banner, accesibilidad)
+- Prueba de credenciales por defecto (solo las más básicas)
+- SQL injection completo disponible en tareas post-ejecución
 
 ---
 

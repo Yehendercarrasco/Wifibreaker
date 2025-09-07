@@ -73,13 +73,11 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
    - Explotación de vulnerabilidades IoT conocidas
    - Establecimiento de acceso visual a la red
 
-8. **Exfiltración de Bases de Datos SQL**
+8. **Reconocimiento de Bases de Datos SQL** (Actualizado)
    - Descubrimiento de bases de datos (MySQL, MSSQL, PostgreSQL, Oracle, MongoDB, Redis)
-   - Prueba de credenciales por defecto
-   - Ataques de SQL injection (UNION, Boolean, Time-based, Error-based)
-   - Exfiltración de datos de bases de datos
-   - Establecimiento de conexiones remotas
-   - Extracción de esquemas y datos sensibles
+   - Obtención de información básica (versión, banner, accesibilidad)
+   - Prueba de credenciales por defecto (solo las más básicas)
+   - **SQL Injection completo disponible en tareas post-ejecución**
 
 9. **Gestión de Backdoors y Accesos Remotos**
    - Descubrimiento automático de backdoors existentes
@@ -87,7 +85,7 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
    - Ejecución de escaneos remotos desde backdoors
    - Gestión de accesos remotos (modificar IPs, puertos, credenciales)
 
-10. **Tareas Post-Ejecución** (Nuevo)
+10. **Tareas Post-Ejecución** (Actualizado)
     - Escaneo profundo de red desde backdoors
     - Extracción avanzada de credenciales (Kerberoasting, ASREPRoasting, DCSync)
     - Escalada de privilegios avanzada (kernel exploits, UAC bypass)
@@ -95,19 +93,24 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
     - Exfiltración comprehensiva de datos
     - Persistencia avanzada (WMI events, COM hijacking)
     - Mapeo completo de red
+    - **SQL Injection completo** (UNION, Boolean, Time-based, Error-based)
+    - **Opción de ejecutar todas las tareas secuencialmente**
 
 ### 📁 **Gestión de Escaneos por Carpetas**
 
-#### **Organización Automática**
+#### **Organización Automática** (Actualizado)
 - **Carpeta por escaneo**: Cada escaneo se organiza en su propia carpeta con mote
+- **Directorio centralizado**: Todos los escaneos se guardan en `scans/`
 - **Estructura organizada**: 
-  - `logs/` - Logs de cada fase
   - `evidence/` - Evidencia de cada fase
-  - `exfiltration/` - Datos exfiltrados
-  - `console/` - Salida de consola completa
+  - `console/` - Logs de consola del escaneo
+  - `screenshots/` - Capturas de pantalla
+  - `data/` - Datos exfiltrados
   - `reports/` - Reportes generados
-  - `backdoors/` - Información de backdoors
-  - `config/` - Configuración del escaneo
+- **Datos globales**:
+  - `sql_reconnaissance/` - Reconocimiento SQL global
+  - `post_execution/` - Tareas post-ejecución
+  - `backdoor_management/` - Gestión de backdoors
 
 #### **Funcionalidades de Gestión**
 - **📋 Listar escaneos**: Ver todos los escaneos disponibles
@@ -116,6 +119,32 @@ Este sistema automatiza las pruebas de penetración en redes internas, implement
 - **🗂️ Explorar archivos**: Navegar por la estructura de archivos
 - **🔄 Continuar escaneos**: Retomar escaneos desde cualquier punto
 - **🔐 Cargar backdoors**: Usar escaneos como fuente de backdoors
+
+### 🌐 **Frontend Web** (Nuevo)
+
+#### **Visor de Reportes Web**
+- **Interfaz moderna**: Visor web responsive para analizar resultados
+- **Visualización completa**: Muestra todos los datos de escaneos
+- **Secciones organizadas**:
+  - Información del escaneo y estadísticas
+  - Fases del pentest completadas
+  - Persistencia y backdoors establecidos
+  - Sistemas comprometidos
+  - Dispositivos IoT explotados
+  - **Reconocimiento SQL** (nuevo)
+  - Conexiones de bases de datos
+  - Datos exfiltrados
+  - **Tareas post-ejecución** (nuevo)
+  - Mapa de red
+
+#### **Iniciar el Frontend**
+```bash
+# Iniciar servidor web
+python3 start_web_frontend.py
+
+# Acceder en el navegador
+http://localhost:8080
+```
 
 ### 🧊 **Pentest Frío**
 

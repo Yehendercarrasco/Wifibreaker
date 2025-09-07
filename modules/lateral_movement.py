@@ -36,8 +36,8 @@ class LateralMovementModule:
             'metasploit_sessions': []
         }
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/lateral_movement")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/lateral_movement")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         
         # Configurar Metasploit

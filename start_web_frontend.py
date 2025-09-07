@@ -34,8 +34,8 @@ def main():
     print(f"🌐 Iniciando servidor web...")
     print()
     
-    # Cambiar al directorio web_frontend
-    os.chdir(web_frontend_dir)
+    # Agregar el directorio web_frontend al path de Python
+    sys.path.insert(0, str(web_frontend_dir))
     
     # Importar y ejecutar el servidor
     try:

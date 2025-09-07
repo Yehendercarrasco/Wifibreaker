@@ -18,8 +18,8 @@ class MenuSystem:
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
         
-        # Directorio de logs
-        self.logs_dir = Path("evidence/logs")
+        # Directorio de logs (ahora en scans/)
+        self.logs_dir = Path("scans")
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         
         # Archivo de metadatos de logs
@@ -212,32 +212,43 @@ class MenuSystem:
         return selected_log.get('filename')
     
     def _get_available_logs(self) -> List[Dict[str, Any]]:
-        """Obtener lista de logs disponibles"""
+        """Obtener lista de escaneos disponibles (logs)"""
         logs = []
         
-        # Buscar logs en el directorio
-        for log_file in self.logs_dir.glob("*.log"):
-            if log_file.name == "log_metadata.json":
+        # Buscar directorios de escaneos
+        for scan_dir in self.logs_dir.iterdir():
+            if not scan_dir.is_dir():
                 continue
                 
-            # Obtener metadatos del log
-            log_id = log_file.stem
-            metadata = self.log_metadata.get("logs", {}).get(log_id, {})
-            
-            # Obtener información del archivo
-            stat = log_file.stat()
-            date = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-            
-            log_info = {
-                'filename': str(log_file),
-                'mote': metadata.get('mote', f'Log_{log_id}'),
-                'date': date,
-                'status': metadata.get('status', 'Incompleto'),
-                'phases_completed': metadata.get('phases_completed', []),
-                'size': stat.st_size
-            }
-            
-            logs.append(log_info)
+            # Buscar archivo de información del escaneo
+            scan_info_file = scan_dir / "scan_info.json"
+            if not scan_info_file.exists():
+                continue
+                
+            try:
+                with open(scan_info_file, 'r', encoding='utf-8') as f:
+                    scan_info = json.load(f)
+                
+                # Obtener información del directorio
+                stat = scan_dir.stat()
+                date = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                
+                log_info = {
+                    'filename': str(scan_dir),  # Ahora es un directorio
+                    'scan_id': scan_info.get('scan_id', scan_dir.name),
+                    'mote': scan_info.get('mote', f'Escaneo_{scan_dir.name}'),
+                    'date': scan_info.get('created_at', date),
+                    'status': scan_info.get('status', 'Incompleto'),
+                    'phases_completed': scan_info.get('phases_completed', []),
+                    'size': sum(f.stat().st_size for f in scan_dir.rglob('*') if f.is_file()),
+                    'is_cold_pentest': scan_info.get('is_cold_pentest', False)
+                }
+                
+                logs.append(log_info)
+                
+            except Exception as e:
+                print(f"Error leyendo {scan_info_file}: {e}")
+                continue
         
         # Ordenar por fecha (más reciente primero)
         logs.sort(key=lambda x: x['date'], reverse=True)
@@ -323,13 +334,19 @@ class MenuSystem:
             status = log_info.get('status', 'Desconocido')
             phases = log_info.get('phases_completed', [])
             size = log_info.get('size', 0)
+            scan_id = log_info.get('scan_id', 'N/A')
+            is_cold = log_info.get('is_cold_pentest', False)
             
             # Determinar color según estado
-            status_color = Colors.GREEN if status == "Completado" else Colors.ORANGE if status == "En progreso" else Colors.RED
+            status_color = Colors.GREEN if status == "completed" else Colors.ORANGE if status == "active" else Colors.RED
             
-            print(f"{Colors.CYAN}{i}. {mote}{Colors.END}")
+            # Icono para pentest frío
+            cold_icon = "🧊" if is_cold else "🔥"
+            
+            print(f"{Colors.CYAN}{i}. {cold_icon} {mote}{Colors.END}")
             print(f"   {Colors.WHITE}📅 Fecha: {date}{Colors.END}")
             print(f"   {Colors.WHITE}📊 Estado: {status_color}{status}{Colors.END}")
+            print(f"   {Colors.WHITE}🆔 ID: {scan_id}{Colors.END}")
             print(f"   {Colors.WHITE}🔧 Fases: {', '.join(phases) if phases else 'Ninguna'}{Colors.END}")
             print(f"   {Colors.WHITE}📁 Tamaño: {size:,} bytes{Colors.END}")
             print()

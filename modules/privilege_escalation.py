@@ -29,8 +29,8 @@ class PrivilegeEscalationModule:
             'privilege_escalation_methods': []
         }
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/privilege_escalation")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/privilege_escalation")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
     
     def _run_command(self, command: List[str], timeout: int = 300) -> Dict[str, Any]:

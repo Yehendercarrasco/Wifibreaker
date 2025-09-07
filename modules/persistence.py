@@ -30,8 +30,8 @@ class PersistenceModule:
             'gpo_modifications': []
         }
         
-        # Archivos de evidencia
-        self.evidence_dir = Path("evidence/persistence")
+        # Archivos de evidencia (ahora en scans/)
+        self.evidence_dir = Path("scans/persistence")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
     
     def _run_command(self, command: List[str], timeout: int = 300) -> Dict[str, Any]:
