@@ -20,6 +20,7 @@ class Colors:
     PURPLE = '\033[95m'     # Progreso
     CYAN = '\033[96m'       # Datos importantes
     YELLOW = '\033[93m'     # Advertencia
+    WHITE = '\033[97m'      # Texto blanco
     BOLD = '\033[1m'        # Negrita
     UNDERLINE = '\033[4m'   # Subrayado
     END = '\033[0m'         # Reset
