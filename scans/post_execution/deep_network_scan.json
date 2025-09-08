@@ -1,8 +1,0 @@
-{
-  "hosts_scanned": 15,
-  "ports_found": 127,
-  "services_discovered": 45,
-  "vulnerabilities_found": 8,
-  "scan_duration": 180.5,
-  "timestamp": 1704657600
-}

@@ -11,7 +11,6 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import ipaddress
 import re
-from modules.logging_system import LoggingSystem
 from modules.unified_logging import UnifiedLoggingSystem
 
 class AdvancedReconnaissanceModule:
@@ -22,7 +21,6 @@ class AdvancedReconnaissanceModule:
         self.logger = logger
         self.network_config = config['network_config']
         self.targets_config = config['targets']
-        self.logging_system = LoggingSystem(config, logger)
         self.unified_logging = unified_logging
         
         # Resultados del reconocimiento avanzado
@@ -45,13 +43,13 @@ class AdvancedReconnaissanceModule:
         self.router_ip = self._discover_router()
         if self.router_ip:
             self.network_config['router_ip'] = self.router_ip
-            self.logging_system.log_success(f"Router descubierto: {self.router_ip}", "ADVANCED_RECON")
+            self.logger.info(f"✅ Router descubierto: {self.router_ip}")
         
         # Obtener IP pública
         self.public_ip = self._get_public_ip()
         if self.public_ip:
             self.results['public_ip'] = self.public_ip
-            self.logging_system.log_important(f"IP pública detectada: {self.public_ip}", "ADVANCED_RECON")
+            self.logger.info(f"🌐 IP pública detectada: {self.public_ip}")
     
     def run_advanced_reconnaissance(self) -> Dict[str, Any]:
         """Ejecutar reconocimiento avanzado completo"""

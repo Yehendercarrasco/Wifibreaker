@@ -9,7 +9,6 @@ import time
 import os
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from modules.logging_system import LoggingSystem
 from modules.unified_logging import UnifiedLoggingSystem
 
 class PersistenceModule:
@@ -19,7 +18,6 @@ class PersistenceModule:
         self.config = config
         self.logger = logger
         self.persistence_config = config['persistence']
-        self.logging_system = LoggingSystem(config, logger)
         self.unified_logging = unified_logging
         
         # Resultados de persistencia
@@ -50,12 +48,8 @@ class PersistenceModule:
                 errors='replace'
             )
             
-            self.logging_system.log_command(
-                ' '.join(command),
-                result.stdout + result.stderr,
-                result.returncode,
-                "PERSISTENCE"
-            )
+            self.logger.debug(f"Comando ejecutado: {' '.join(command)}")
+            self.logger.debug(f"Salida: {result.stdout + result.stderr}")
             
             return {
                 'stdout': result.stdout,
@@ -126,9 +120,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "NETCAT_BACKDOOR", backdoor_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Backdoor Netcat instalado en {host}:{port}")
             
             return backdoor_info
             
@@ -168,9 +160,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "POWERSHELL_BACKDOOR", backdoor_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Backdoor PowerShell instalado en {host}")
             
             return backdoor_info
             
@@ -210,9 +200,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "PYTHON_BACKDOOR", backdoor_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Backdoor Python instalado en {host}")
             
             return backdoor_info
             
@@ -263,9 +251,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "WINDOWS_SCHEDULED_TASK", task_info, "PERSISTENCE"
-            )
+            self.logger.info(f"⏰ Tarea programada Windows creada en {host}")
             
             return task_info
             
@@ -293,9 +279,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "LINUX_CRON_JOB", cron_info, "PERSISTENCE"
-            )
+            self.logger.info(f"⏰ Cron job Linux creado en {host}")
             
             return cron_info
             
@@ -334,9 +318,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "REGISTRY_MODIFICATION", registry_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Modificación de registro Windows en {host}")
             
             registry_modifications.append(registry_info)
         
@@ -386,9 +368,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "WINDOWS_SERVICE", service_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Servicio Windows creado en {host}")
             
             return service_info
             
@@ -431,9 +411,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "LINUX_SERVICE", service_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔧 Servicio Linux creado en {host}")
             
             return service_info
             
@@ -494,9 +472,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "SSH_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔗 Conexión SSH persistente establecida en {host}")
             
             return connection_info
             
@@ -531,9 +507,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "RDP_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔗 Conexión RDP persistente establecida en {host}")
             
             return connection_info
             
@@ -568,9 +542,7 @@ class PersistenceModule:
                 'success': True
             }
             
-            self.logging_system.log_persistence(
-                host, "WEB_PERSISTENT_CONNECTION", connection_info, "PERSISTENCE"
-            )
+            self.logger.info(f"🔗 Conexión web persistente establecida en {host}")
             
             return connection_info
             
@@ -620,12 +592,10 @@ class PersistenceModule:
                 self.unified_logging.mark_phase_completed('persistence')
                 self.logger.info("✅ Datos de persistencia agregados al sistema unificado")
             else:
-                # Fallback al sistema anterior
-                self.logging_system.save_json_evidence(
-                    'persistence_results.json',
-                    self.results,
-                    'data'
-                )
+                # Usar sistema unificado
+                if self.unified_logging:
+                    # Los datos ya se guardaron en el sistema unificado
+                    pass
             
             end_time = time.time()
             duration = end_time - start_time

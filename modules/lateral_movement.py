@@ -12,7 +12,6 @@ import tempfile
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
-from modules.logging_system import LoggingSystem
 from modules.unified_logging import UnifiedLoggingSystem
 from modules.clean_console import CleanConsole
 
@@ -24,7 +23,6 @@ class LateralMovementModule:
         self.logger = logger
         self.targets_config = config['targets']
         self.exploitation_config = config['exploitation']
-        self.logging_system = LoggingSystem(config, logger)
         self.clean_console = CleanConsole(config, logger)
         self.unified_logging = unified_logging
         
@@ -128,12 +126,8 @@ class LateralMovementModule:
                 )
                 
                 # Log del comando
-                self.logging_system.log_command(
-                    ' '.join(command),
-                    result.stdout + result.stderr,
-                    result.returncode,
-                    "LATERAL_MOVEMENT"
-                )
+                self.logger.debug(f"Comando ejecutado: {' '.join(command)}")
+                self.logger.debug(f"Salida: {result.stdout + result.stderr}")
                 
                 return {
                     'stdout': result.stdout,
@@ -204,10 +198,6 @@ class LateralMovementModule:
                     'success': True
                 }
                 
-                self.logging_system.log_compromise(
-                    host, "SMB_ANONYMOUS_ACCESS", access_info, "LATERAL_MOVEMENT"
-                )
-                
                 self.logger.info(f"✅ Acceso SMB anónimo exitoso a {host}")
                 return access_info
             
@@ -237,10 +227,6 @@ class LateralMovementModule:
                     'timestamp': time.time(),
                     'success': True
                 }
-                
-                self.logging_system.log_compromise(
-                    host, "SMB_AUTHENTICATED_ACCESS", access_info, "LATERAL_MOVEMENT"
-                )
                 
                 self.logger.info(f"✅ Acceso SMB autenticado exitoso a {host} con {username}")
                 return access_info
@@ -346,9 +332,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'eternalblue'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "ETERNALBLUE_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ EternalBlue exitoso en {host}")
             else:
                 self.logger.info(f"❌ EternalBlue falló en {host}")
@@ -396,9 +379,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'smbghost'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "SMBGHOST_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ SMBGhost exitoso en {host}")
             else:
                 self.logger.info(f"❌ SMBGhost falló en {host}")
@@ -446,9 +426,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'bluekeep'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "BLUEKEEP_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ BlueKeep exitoso en {host}")
             else:
                 self.logger.info(f"❌ BlueKeep falló en {host}")
@@ -530,9 +507,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'tomcat_manager'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "TOMCAT_MANAGER_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ Tomcat Manager Upload exitoso en {host}")
             else:
                 self.logger.info(f"❌ Tomcat Manager Upload falló en {host}")
@@ -580,9 +554,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'struts2'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "STRUTS_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ Apache Struts exitoso en {host}")
             else:
                 self.logger.info(f"❌ Apache Struts falló en {host}")
@@ -630,9 +601,6 @@ class LateralMovementModule:
             
             if result['success'] and self._check_exploit_success(result['stdout'], 'jenkins'):
                 exploit_result['success'] = True
-                self.logging_system.log_compromise(
-                    host, "JENKINS_EXPLOIT", exploit_result, "LATERAL_MOVEMENT"
-                )
                 self.logger.info(f"✅ Jenkins RCE exitoso en {host}")
             else:
                 self.logger.info(f"❌ Jenkins RCE falló en {host}")
@@ -704,10 +672,6 @@ class LateralMovementModule:
                 'success': True
             }
             
-            self.logging_system.log_compromise(
-                host, "NETCAT_BACKDOOR", backdoor_info, "LATERAL_MOVEMENT"
-            )
-            
             self.logger.info(f"✅ Backdoor netcat creado en {host}")
             return backdoor_info
             
@@ -740,10 +704,6 @@ class LateralMovementModule:
                 'timestamp': time.time(),
                 'success': True
             }
-            
-            self.logging_system.log_compromise(
-                host, "PERSISTENT_USER", user_info, "LATERAL_MOVEMENT"
-            )
             
             self.logger.info(f"✅ Usuario persistente creado en {host}")
             return user_info
@@ -778,10 +738,6 @@ class LateralMovementModule:
                 'timestamp': time.time(),
                 'success': True
             }
-            
-            self.logging_system.log_compromise(
-                host, "SSH_KEY_SETUP", ssh_info, "LATERAL_MOVEMENT"
-            )
             
             self.logger.info(f"✅ Clave SSH configurada en {host}")
             return ssh_info
@@ -895,12 +851,10 @@ class LateralMovementModule:
                 self.unified_logging.mark_phase_completed('lateral_movement')
                 self.logger.info("✅ Datos de movimiento lateral agregados al sistema unificado")
             else:
-                # Fallback al sistema anterior
-                self.logging_system.save_json_evidence(
-                    'lateral_movement_results.json',
-                    self.results,
-                    'data'
-                )
+                # Usar sistema unificado
+                if self.unified_logging:
+                    # Los datos ya se guardaron en el sistema unificado
+                    pass
             
             end_time = time.time()
             duration = end_time - start_time

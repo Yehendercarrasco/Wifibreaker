@@ -12,7 +12,6 @@ import signal
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
-from modules.logging_system import LoggingSystem
 from modules.clean_console import CleanConsole
 from modules.unified_logging import UnifiedLoggingSystem
 
@@ -24,7 +23,6 @@ class CredentialModule:
         self.logger = logger
         self.credentials_config = config['credentials']
         self.network_config = config['network_config']
-        self.logging_system = LoggingSystem(config, logger)
         self.clean_console = CleanConsole(config, logger)
         self.unified_logging = unified_logging
         
@@ -78,12 +76,8 @@ class CredentialModule:
                 )
                 
                 # Log del comando
-                self.logging_system.log_command(
-                    ' '.join(command),
-                    result.stdout + result.stderr,
-                    result.returncode,
-                    "CREDENTIAL_HARVESTING"
-                )
+                self.logger.debug(f"Comando ejecutado: {' '.join(command)}")
+                self.logger.debug(f"Salida: {result.stdout + result.stderr}")
                 
                 return {
                     'stdout': result.stdout,
@@ -116,12 +110,7 @@ class CredentialModule:
             
             if result['success']:
                 self.background_processes['responder'] = result['process']
-                self.logging_system.log_event(
-                    "RESPONDER_STARTED",
-                    f"Responder iniciado en interfaz {interface}",
-                    {"interface": interface, "pid": result['process'].pid},
-                    "CREDENTIAL_HARVESTING"
-                )
+                self.logger.info(f"🚀 Responder iniciado en interfaz {interface}")
                 
                 # Esperar un poco para que Responder se inicie
                 time.sleep(5)
@@ -144,13 +133,6 @@ class CredentialModule:
                 process.terminate()
                 process.wait(timeout=10)
                 self.logger.info("🛑 Responder detenido")
-                
-                self.logging_system.log_event(
-                    "RESPONDER_STOPPED",
-                    "Responder detenido",
-                    {"pid": process.pid},
-                    "CREDENTIAL_HARVESTING"
-                )
                 
             except Exception as e:
                 self.logger.error(f"❌ Error deteniendo Responder: {e}")
@@ -185,13 +167,6 @@ class CredentialModule:
                     'interface': interface
                 })
                 
-                self.logging_system.log_event(
-                    "TRAFFIC_SNIFFING_STARTED",
-                    f"Captura de tráfico iniciada en {pcap_file}",
-                    {"pcap_file": str(pcap_file), "interface": interface},
-                    "CREDENTIAL_HARVESTING"
-                )
-                
                 self.logger.info(f"✅ Captura de tráfico iniciada: {pcap_file}")
                 return True
             else:
@@ -210,13 +185,6 @@ class CredentialModule:
                 process.terminate()
                 process.wait(timeout=10)
                 self.logger.info("🛑 Captura de tráfico detenida")
-                
-                self.logging_system.log_event(
-                    "TRAFFIC_SNIFFING_STOPPED",
-                    "Captura de tráfico detenida",
-                    {"pid": process.pid},
-                    "CREDENTIAL_HARVESTING"
-                )
                 
             except Exception as e:
                 self.logger.error(f"❌ Error deteniendo captura de tráfico: {e}")
@@ -257,10 +225,7 @@ class CredentialModule:
             
             if result:
                 brute_force_results.append(result)
-                self.logging_system.log_credential(
-                    host, service, result.get('username', 'unknown'), 
-                    result.get('success', False), "CREDENTIAL_HARVESTING"
-                )
+                self.logger.info(f"🔑 Credencial encontrada: {result.get('username', 'unknown')} en {host}:{port}")
         
         self.results['brute_force_results'] = brute_force_results
         return brute_force_results
@@ -595,9 +560,7 @@ class CredentialModule:
                     valid_credentials.append(credential)
                     self.results['valid_credentials'].append(credential)
                     
-                    self.logging_system.log_credential(
-                        host, service, username, True, "CREDENTIAL_HARVESTING"
-                    )
+                    self.logger.info(f"✅ Credencial válida: {username} en {host}:{port}")
                     
                     self.logger.info(f"✅ Credencial por defecto encontrada: {username}:{password}@{host}")
                     break  # No probar más credenciales para este servicio
@@ -741,12 +704,7 @@ class CredentialModule:
                                     'size': len(content)
                                 })
                                 
-                                self.logging_system.log_event(
-                                    "RESPONDER_LOG_COLLECTED",
-                                    f"Log de Responder recopilado: {log_file}",
-                                    {"file": log_file, "size": len(content)},
-                                    "CREDENTIAL_HARVESTING"
-                                )
+                                self.logger.info(f"📄 Log de Responder recopilado: {log_file}")
                                 
                             except Exception as e:
                                 self.logger.debug(f"Error leyendo log {log_file}: {e}")
@@ -829,12 +787,10 @@ class CredentialModule:
                 self.unified_logging.mark_phase_completed('credential_harvesting')
                 self.logger.info("✅ Credenciales agregadas al sistema unificado")
             else:
-                # Fallback al sistema anterior
-                self.logging_system.save_json_evidence(
-                    'credential_harvesting_results.json',
-                    self.results,
-                    'data'
-                )
+                # Usar sistema unificado
+                if self.unified_logging:
+                    # Los datos ya se guardaron en el sistema unificado
+                    pass
             
             end_time = time.time()
             duration = end_time - start_time

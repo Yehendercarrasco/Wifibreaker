@@ -12,9 +12,9 @@ import shutil
 import hashlib
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from modules.logging_system import LoggingSystem
 from modules.unified_logging import UnifiedLoggingSystem
 from modules.permission_system import PermissionSystem
+from modules.logging_system import Colors
 
 class ExfiltrationModule:
     """Módulo de exfiltración de datos"""
@@ -23,7 +23,6 @@ class ExfiltrationModule:
         self.config = config
         self.logger = logger
         self.exfiltration_config = config['exfiltration']
-        self.logging_system = LoggingSystem(config, logger)
         self.permission_system = PermissionSystem(logger)
         self.unified_logging = unified_logging
         
@@ -64,12 +63,8 @@ class ExfiltrationModule:
                 errors='replace'
             )
             
-            self.logging_system.log_command(
-                ' '.join(command),
-                result.stdout + result.stderr,
-                result.returncode,
-                "EXFILTRATION"
-            )
+            self.logger.debug(f"Comando ejecutado: {' '.join(command)}")
+            self.logger.debug(f"Salida: {result.stdout + result.stderr}")
             
             return {
                 'stdout': result.stdout,
@@ -227,7 +222,7 @@ class ExfiltrationModule:
     
     def collect_small_files_only(self, compromised_systems: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Recopilar solo archivos pequeños (exfiltración rápida)"""
-        self.logging_system.log_progress("RECOPILANDO ARCHIVOS PEQUEÑOS (EXFILTRACIÓN RÁPIDA)", "EXFILTRATION")
+        self.logger.info("📁 RECOPILANDO ARCHIVOS PEQUEÑOS (EXFILTRACIÓN RÁPIDA)")
         
         collected_data = []
         max_file_size = 10 * 1024 * 1024  # 10MB máximo por archivo
@@ -255,7 +250,7 @@ class ExfiltrationModule:
         
         for system in compromised_systems:
             host = system['host']
-            self.logging_system.log_info(f"Recopilando archivos pequeños en {host}", "EXFILTRATION")
+            self.logger.info(f"📁 Recopilando archivos pequeños en {host}")
             
             # Comandos para encontrar archivos pequeños
             find_commands = [
@@ -298,7 +293,7 @@ class ExfiltrationModule:
                             
                             # Verificar límite total
                             if sum(data.get('size', 0) for data in collected_data) + file_size > total_size_limit:
-                                self.logging_system.log_warning(f"Límite total de tamaño alcanzado ({total_size_limit} bytes)", "EXFILTRATION")
+                                self.logger.warning(f"⚠️ Límite total de tamaño alcanzado ({total_size_limit} bytes)")
                                 break
                             
                             # Agregar archivo a la lista
@@ -311,13 +306,13 @@ class ExfiltrationModule:
                                 'timestamp': time.time()
                             })
                             
-                            self.logging_system.log_info(f"Archivo pequeño encontrado: {file_path} ({file_size} bytes)", "EXFILTRATION")
+                            self.logger.info(f"📄 Archivo pequeño encontrado: {file_path} ({file_size} bytes)")
                             
                         except Exception as e:
-                            self.logging_system.log_debug(f"Error verificando archivo {file_path}: {e}", "EXFILTRATION")
+                            self.logger.debug(f"Error verificando archivo {file_path}: {e}")
                             continue
         
-        self.logging_system.log_success(f"EXFILTRACIÓN RÁPIDA COMPLETADA: {len(collected_data)} archivos pequeños recopilados", "EXFILTRATION")
+        self.logger.info(f"✅ EXFILTRACIÓN RÁPIDA COMPLETADA: {len(collected_data)} archivos pequeños recopilados")
         return collected_data
     
     def _get_file_size(self, file_path: str) -> int:
@@ -453,19 +448,19 @@ class ExfiltrationModule:
         """Comprimir datos recopilados (con permisos)"""
         # Solicitar permiso para compresión
         if not self.permission_system.request_permission('compress_data', 'Comprimir archivos del sistema objetivo'):
-            self.logging_system.log_warning("Compresión cancelada - permiso denegado", "EXFILTRATION")
+            self.logger.warning("⚠️ Compresión cancelada - permiso denegado")
             self.permission_system.log_permission_denied('compress_data', 'Usuario denegó permiso')
             self.results['permissions_denied'].append('compress_data')
             return []
         
-        self.logging_system.log_progress("FASE 2: Comprimiendo datos recopilados (con permiso otorgado)", "EXFILTRATION")
+        self.logger.info("🗜️ FASE 2: Comprimiendo datos recopilados (con permiso otorgado)")
         self.permission_system.log_permission_granted('compress_data', 'Usuario aprobó compresión')
         self.results['permissions_granted'].append('compress_data')
         
         compression_results = []
         
         if not collected_data:
-            self.logging_system.log_warning("No hay datos para comprimir", "EXFILTRATION")
+            self.logger.warning("⚠️ No hay datos para comprimir")
             return compression_results
         
         # Calcular tamaño total antes de comprimir
@@ -511,12 +506,7 @@ class ExfiltrationModule:
             
             compression_results.append(compression_result)
             
-            self.logging_system.log_event(
-                "DATA_COMPRESSION",
-                f"Datos comprimidos en {zip_filename}",
-                compression_result,
-                "EXFILTRATION"
-            )
+            self.logger.info(f"🗜️ Datos comprimidos en {zip_filename}")
             
             self.logger.info(f"✅ FASE 2 COMPLETADA: Compresión exitosa")
             self.logger.info(f"  📊 Archivos comprimidos: {files_added}")
@@ -535,12 +525,12 @@ class ExfiltrationModule:
         """Encriptar datos antes de la exfiltración (con permisos)"""
         # Solicitar permiso para encriptación
         if not self.permission_system.request_permission('encrypt_data', 'Encriptar datos del sistema objetivo'):
-            self.logging_system.log_warning("Encriptación cancelada - permiso denegado", "EXFILTRATION")
+            self.logger.warning("⚠️ Encriptación cancelada - permiso denegado")
             self.permission_system.log_permission_denied('encrypt_data', 'Usuario denegó permiso')
             self.results['permissions_denied'].append('encrypt_data')
             return []
         
-        self.logging_system.log_progress("FASE 2.5: Encriptando datos (con permiso otorgado)", "EXFILTRATION")
+        self.logger.info("🔐 FASE 2.5: Encriptando datos (con permiso otorgado)")
         self.permission_system.log_permission_granted('encrypt_data', 'Usuario aprobó encriptación')
         self.results['permissions_granted'].append('encrypt_data')
         
@@ -575,10 +565,10 @@ class ExfiltrationModule:
                 
                 encryption_results.append(encryption_result)
                 
-                self.logging_system.log_success(f"Datos encriptados: {encrypted_file}", "EXFILTRATION")
+                self.logger.info(f"🔐 Datos encriptados: {encrypted_file}")
                 
             except Exception as e:
-                self.logging_system.log_error(f"Error encriptando {data_file}: {e}", "EXFILTRATION")
+                self.logger.error(f"❌ Error encriptando {data_file}: {e}")
         
         self.results['encryption_results'] = encryption_results
         return encryption_results
@@ -587,12 +577,12 @@ class ExfiltrationModule:
         """Corromper datos del sistema objetivo (con permisos críticos)"""
         # Solicitar permiso para corrupción de datos
         if not self.permission_system.request_permission('corrupt_data', 'Corromper datos del sistema objetivo'):
-            self.logging_system.log_warning("Corrupción de datos cancelada - permiso denegado", "EXFILTRATION")
+            self.logger.warning("⚠️ Corrupción de datos cancelada - permiso denegado")
             self.permission_system.log_permission_denied('corrupt_data', 'Usuario denegó permiso')
             self.results['permissions_denied'].append('corrupt_data')
             return []
         
-        self.logging_system.log_progress("FASE 2.7: Corrompiendo datos (con permiso crítico otorgado)", "EXFILTRATION")
+        self.logger.info("💥 FASE 2.7: Corrompiendo datos (con permiso crítico otorgado)")
         self.permission_system.log_permission_granted('corrupt_data', 'Usuario aprobó corrupción de datos')
         self.results['permissions_granted'].append('corrupt_data')
         
@@ -628,10 +618,10 @@ class ExfiltrationModule:
                 
                 corruption_results.append(corruption_result)
                 
-                self.logging_system.log_success(f"Datos corrompidos: {corrupted_file}", "EXFILTRATION")
+                self.logger.info(f"💥 Datos corrompidos: {corrupted_file}")
                 
             except Exception as e:
-                self.logging_system.log_error(f"Error corrompiendo {data_file}: {e}", "EXFILTRATION")
+                self.logger.error(f"❌ Error corrompiendo {data_file}: {e}")
         
         self.results['corruption_results'] = corruption_results
         return corruption_results
@@ -683,9 +673,7 @@ class ExfiltrationModule:
                     
                     exfiltration_results.append(exfiltration_result)
                     
-                    self.logging_system.log_exfiltration(
-                        'local', 'file', file_size, f'{remote_server}:{remote_path}', "EXFILTRATION"
-                    )
+                    self.logger.info(f"📤 Exfiltración: {file_size} bytes a {remote_server}:{remote_path}")
                     
                     self.logger.info(f"  ✅ Exfiltración exitosa: {os.path.basename(data_file)}")
                 else:
@@ -771,30 +759,30 @@ class ExfiltrationModule:
         """Limpiar exploits persistentes de la red (solo si se solicita)"""
         # Solicitar permiso para limpieza de backdoors
         if not self.permission_system.request_permission('cleanup_backdoors', 'Limpiar backdoors y accesos persistentes'):
-            self.logging_system.log_warning("Limpieza de backdoors cancelada - permiso denegado", "EXFILTRATION")
+            self.logger.warning("⚠️ Limpieza de backdoors cancelada - permiso denegado")
             self.permission_system.log_permission_denied('cleanup_backdoors', 'Usuario denegó permiso')
             self.results['permissions_denied'].append('cleanup_backdoors')
             return []
         
-        self.logging_system.log_progress("FASE 5: Limpiando exploits persistentes (con permiso otorgado)", "EXFILTRATION")
+        self.logger.info("🧹 FASE 5: Limpiando exploits persistentes (con permiso otorgado)")
         self.permission_system.log_permission_granted('cleanup_backdoors', 'Usuario aprobó limpieza de backdoors')
         self.results['permissions_granted'].append('cleanup_backdoors')
         
         cleanup_results = []
         
         if not exploits:
-            self.logging_system.log_info("No hay exploits para limpiar", "EXFILTRATION")
+            self.logger.info("ℹ️ No hay exploits para limpiar")
             return cleanup_results
         
-        self.logging_system.log_info(f"Limpiando {len(exploits)} exploit(s) persistente(s)...", "EXFILTRATION")
+        self.logger.info(f"🧹 Limpiando {len(exploits)} exploit(s) persistente(s)...")
         
         for i, exploit in enumerate(exploits, 1):
             try:
-                self.logging_system.log_progress(f"[{i}/{len(exploits)}] Limpiando: {exploit.get('type', 'unknown')}", "EXFILTRATION")
+                self.logger.info(f"🧹 [{i}/{len(exploits)}] Limpiando: {exploit.get('type', 'unknown')}")
                 
                 # Simular limpieza de exploit
                 if self.dry_run:
-                    self.logging_system.log_info("[DRY-RUN] Simulando limpieza de exploit", "EXFILTRATION")
+                    self.logger.info("🧪 [DRY-RUN] Simulando limpieza de exploit")
                     cleanup_status = "simulated"
                 else:
                     # Simular resultado de limpieza
@@ -811,14 +799,14 @@ class ExfiltrationModule:
                 cleanup_results.append(result)
                 
                 if cleanup_status == "cleaned":
-                    self.logging_system.log_success("Exploit limpiado exitosamente", "EXFILTRATION")
+                    self.logger.info("✅ Exploit limpiado exitosamente")
                 else:
-                    self.logging_system.log_info("[DRY-RUN] Exploit sería limpiado", "EXFILTRATION")
+                    self.logger.info("🧪 [DRY-RUN] Exploit sería limpiado")
                 
             except Exception as e:
-                self.logging_system.log_error(f"Error limpiando exploit {i}: {e}", "EXFILTRATION")
+                self.logger.error(f"❌ Error limpiando exploit {i}: {e}")
         
-        self.logging_system.log_success(f"FASE 5 COMPLETADA: {len(cleanup_results)} exploit(s) procesado(s)", "EXFILTRATION")
+        self.logger.info(f"✅ FASE 5 COMPLETADA: {len(cleanup_results)} exploit(s) procesado(s)")
         
         return cleanup_results
     
@@ -826,30 +814,30 @@ class ExfiltrationModule:
         """Limpiar solo evidencia innecesaria (mantener accesos)"""
         # Solicitar permiso para limpieza de evidencia
         if not self.permission_system.request_permission('cleanup_evidence', 'Limpiar evidencia de rastros (mantener accesos)'):
-            self.logging_system.log_warning("Limpieza de evidencia cancelada - permiso denegado", "EXFILTRATION")
+            self.logger.warning("⚠️ Limpieza de evidencia cancelada - permiso denegado")
             self.permission_system.log_permission_denied('cleanup_evidence', 'Usuario denegó permiso')
             self.results['permissions_denied'].append('cleanup_evidence')
             return []
         
-        self.logging_system.log_progress("FASE 5.5: Limpiando evidencia innecesaria (manteniendo accesos)", "EXFILTRATION")
+        self.logger.info("🧹 FASE 5.5: Limpiando evidencia innecesaria (manteniendo accesos)")
         self.permission_system.log_permission_granted('cleanup_evidence', 'Usuario aprobó limpieza de evidencia')
         self.results['permissions_granted'].append('cleanup_evidence')
         
         cleanup_results = []
         
         if not exploits:
-            self.logging_system.log_info("No hay evidencia para limpiar", "EXFILTRATION")
+            self.logger.info("ℹ️ No hay evidencia para limpiar")
             return cleanup_results
         
-        self.logging_system.log_info(f"Limpiando evidencia de {len(exploits)} exploit(s)...", "EXFILTRATION")
+        self.logger.info(f"🧹 Limpiando evidencia de {len(exploits)} exploit(s)...")
         
         for i, exploit in enumerate(exploits, 1):
             try:
-                self.logging_system.log_progress(f"[{i}/{len(exploits)}] Limpiando evidencia de: {exploit.get('type', 'unknown')}", "EXFILTRATION")
+                self.logger.info(f"🧹 [{i}/{len(exploits)}] Limpiando evidencia de: {exploit.get('type', 'unknown')}")
                 
                 # Simular limpieza de evidencia (mantener acceso)
                 if self.dry_run:
-                    self.logging_system.log_info("[DRY-RUN] Simulando limpieza de evidencia", "EXFILTRATION")
+                    self.logger.info("🧪 [DRY-RUN] Simulando limpieza de evidencia")
                     cleanup_status = "simulated"
                 else:
                     # Simular resultado de limpieza de evidencia
@@ -867,22 +855,22 @@ class ExfiltrationModule:
                 cleanup_results.append(result)
                 
                 if cleanup_status == "evidence_cleaned":
-                    self.logging_system.log_success("Evidencia limpiada (acceso mantenido)", "EXFILTRATION")
+                    self.logger.info("✅ Evidencia limpiada (acceso mantenido)")
                 else:
-                    self.logging_system.log_info("[DRY-RUN] Evidencia sería limpiada", "EXFILTRATION")
+                    self.logger.info("🧪 [DRY-RUN] Evidencia sería limpiada")
                 
             except Exception as e:
-                self.logging_system.log_error(f"Error limpiando evidencia {i}: {e}", "EXFILTRATION")
+                self.logger.error(f"❌ Error limpiando evidencia {i}: {e}")
         
-        self.logging_system.log_success(f"FASE 5.5 COMPLETADA: {len(cleanup_results)} evidencia(s) procesada(s)", "EXFILTRATION")
+        self.logger.info(f"✅ FASE 5.5 COMPLETADA: {len(cleanup_results)} evidencia(s) procesada(s)")
         
         return cleanup_results
     
     
     def run(self, management_mode: bool = False, log_file: str = "pentest_automation.log", delicate_options: Dict[str, Any] = None) -> Dict[str, Any]:
         """Ejecutar módulo completo de exfiltración"""
-        self.logging_system.log_progress("INICIANDO MÓDULO DE EXFILTRACIÓN DE DATOS", "EXFILTRATION")
-        self.logging_system.log_info("=" * 60, "EXFILTRATION")
+        self.logger.info("🚀 INICIANDO MÓDULO DE EXFILTRACIÓN DE DATOS")
+        self.logger.info("=" * 60)
         
         start_time = time.time()
         
@@ -895,15 +883,15 @@ class ExfiltrationModule:
                 'fast_exfiltration': True
             }
         
-        self.logging_system.log_info(f"Configuración de exfiltración:", "EXFILTRATION")
-        self.logging_system.log_info(f"  • Compresión: {'✅ Habilitada' if delicate_options.get('compression_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
-        self.logging_system.log_info(f"  • Encriptación: {'✅ Habilitada' if delicate_options.get('encryption_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
-        self.logging_system.log_info(f"  • Corrupción: {'✅ Habilitada' if delicate_options.get('corruption_enabled') else '❌ Deshabilitada'}", "EXFILTRATION")
-        self.logging_system.log_info(f"  • Exfiltración rápida: {'✅ Habilitada' if delicate_options.get('fast_exfiltration') else '❌ Deshabilitada'}", "EXFILTRATION")
+        self.logger.info(f"Configuración de exfiltración:")
+        self.logger.info(f"  • Compresión: {'✅ Habilitada' if delicate_options.get('compression_enabled') else '❌ Deshabilitada'}")
+        self.logger.info(f"  • Encriptación: {'✅ Habilitada' if delicate_options.get('encryption_enabled') else '❌ Deshabilitada'}")
+        self.logger.info(f"  • Corrupción: {'✅ Habilitada' if delicate_options.get('corruption_enabled') else '❌ Deshabilitada'}")
+        self.logger.info(f"  • Exfiltración rápida: {'✅ Habilitada' if delicate_options.get('fast_exfiltration') else '❌ Deshabilitada'}")
         
         try:
             if management_mode:
-                self.logging_system.log_info("MODO GESTIÓN: Trabajando con exploits persistentes existentes", "EXFILTRATION")
+                self.logger.info("🔧 MODO GESTIÓN: Trabajando con exploits persistentes existentes")
                 
                 # Cargar exploits existentes desde logs
                 existing_exploits = self.load_existing_exploits(log_file)
@@ -916,7 +904,7 @@ class ExfiltrationModule:
                     connectivity_results = self.test_backdoor_connectivity(existing_exploits)
                     
                     # Opciones de limpieza selectiva
-                    self.logging_system.log_info("Opciones de limpieza disponibles:", "EXFILTRATION")
+                    self.logger.info("Opciones de limpieza disponibles:")
                     print(f"{Colors.YELLOW}1. Limpiar solo evidencia (mantener accesos){Colors.END}")
                     print(f"{Colors.ORANGE}2. Limpiar backdoors completamente{Colors.END}")
                     print(f"{Colors.BLUE}3. No limpiar nada{Colors.END}")
@@ -930,10 +918,10 @@ class ExfiltrationModule:
                         elif cleanup_choice == '2':
                             cleanup_results = self.cleanup_exploits(existing_exploits)
                         else:
-                            self.logging_system.log_info("Limpieza cancelada por el usuario", "EXFILTRATION")
+                            self.logger.info("ℹ️ Limpieza cancelada por el usuario")
                             
                     except KeyboardInterrupt:
-                        self.logging_system.log_info("Limpieza cancelada por el usuario", "EXFILTRATION")
+                        self.logger.info("ℹ️ Limpieza cancelada por el usuario")
                         cleanup_results = []
                     
                     self.results['persistent_exploits'] = existing_exploits
@@ -941,8 +929,8 @@ class ExfiltrationModule:
                     self.results['connectivity_results'] = connectivity_results
                     self.results['cleanup_results'] = cleanup_results
                 else:
-                    self.logging_system.log_warning("No se encontraron exploits persistentes en los logs", "EXFILTRATION")
-                    self.logging_system.log_info("Asegúrese de que el archivo de log contenga información de exploits", "EXFILTRATION")
+                    self.logger.warning("⚠️ No se encontraron exploits persistentes en los logs")
+                    self.logger.info("ℹ️ Asegúrese de que el archivo de log contenga información de exploits")
                 
             else:
                 if delicate_options.get('fast_exfiltration', True):
@@ -979,7 +967,7 @@ class ExfiltrationModule:
                     compression_results = self.compress_data(collected_data)
                     
                     if not compression_results:
-                        self.logging_system.log_warning("Compresión cancelada o falló", "EXFILTRATION")
+                        self.logger.warning("⚠️ Compresión cancelada o falló")
                         data_files = []
                     else:
                         data_files = [result['zip_file'] for result in compression_results]
@@ -1026,11 +1014,10 @@ class ExfiltrationModule:
                 self.logger.info("✅ Datos de exfiltración agregados al sistema unificado")
             else:
                 # Fallback al sistema anterior
-                self.logging_system.save_json_evidence(
-                    'exfiltration_results.json',
-                    self.results,
-                    'data'
-                )
+                # Usar sistema unificado
+                if self.unified_logging:
+                    # Los datos ya se guardaron en el sistema unificado
+                    pass
             
             end_time = time.time()
             duration = end_time - start_time
@@ -1041,11 +1028,15 @@ class ExfiltrationModule:
             self.results['exploits_managed'] = len(self.results.get('persistent_exploits', []))
             
             # Resumen final
-            self.logging_system.log_info("=" * 60, "EXFILTRATION")
-            self.logging_system.log_success("MÓDULO DE EXFILTRACIÓN COMPLETADO", "EXFILTRATION")
+            self.logger.info("=" * 60)
+            self.logger.info("✅ MÓDULO DE EXFILTRACIÓN COMPLETADO")
             
             # Generar y mostrar resumen de fase
-            phase_summary = self.logging_system.generate_phase_summary("EXFILTRATION", self.results)
+            # Resumen de fase
+            phase_summary = f"📊 RESUMEN DE EXFILTRACIÓN:\n"
+            phase_summary += f"  • Archivos exfiltrados: {self.results.get('files_exfiltrated', 0)}\n"
+            phase_summary += f"  • Tamaño total: {self.results.get('data_size', 0):,} bytes\n"
+            phase_summary += f"  • Tiempo de ejecución: {duration:.2f} segundos"
             print(f"\n{phase_summary}\n")
             
             # Mostrar resumen de permisos
@@ -1066,7 +1057,7 @@ class ExfiltrationModule:
                 print(f"{Colors.CYAN}{'='*40}{Colors.END}")
             
             if self.dry_run:
-                self.logging_system.log_info("[DRY-RUN] Esta fue una simulación - no se realizaron cambios reales", "EXFILTRATION")
+                self.logger.info("🧪 [DRY-RUN] Esta fue una simulación - no se realizaron cambios reales")
             
             return self.results
             

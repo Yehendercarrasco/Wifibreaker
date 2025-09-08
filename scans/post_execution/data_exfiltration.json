@@ -1,9 +1,0 @@
-{
-  "data_size": 52428800,
-  "files_exfiltrated": 1250,
-  "sensitive_files": 45,
-  "databases_dumped": 3,
-  "exfiltration_duration": 320.8,
-  "compression_ratio": 0.75,
-  "timestamp": 1704657600
-}
