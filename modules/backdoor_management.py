@@ -8,7 +8,10 @@ import json
 import time
 import os
 import socket
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
@@ -529,6 +532,9 @@ class BackdoorManagementModule:
     def _test_camera_connection(self, ip: str, port: str, backdoor: Dict[str, Any]) -> Dict[str, Any]:
         """Probar conexión de cámara"""
         try:
+            if not requests:
+                return {'success': False, 'error': 'requests module not available'}
+            
             url = f"http://{ip}:{port}"
             start_time = time.time()
             response = requests.get(url, timeout=10)
@@ -654,6 +660,8 @@ class BackdoorManagementModule:
         
         for url in scan_urls:
             try:
+                if not requests:
+                    continue
                 response = requests.get(url, timeout=10)
                 results['urls'].append(url)
                 results['responses'].append({

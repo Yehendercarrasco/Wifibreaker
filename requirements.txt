@@ -1,22 +1,2 @@
-# Dependencias de Python para el Sistema de Automatización de Pruebas de Penetración
-
-# Librerías estándar (incluidas en Python 3.6+)
-# json, os, sys, time, logging, threading, datetime, pathlib, argparse, signal
-
-# Dependencias adicionales (si es necesario)
-# Nota: La mayoría de funcionalidades usan herramientas del sistema operativo
-# y no requieren dependencias adicionales de Python
-
-# Para funcionalidades futuras (opcional)
-# requests>=2.25.1          # Para comunicación HTTP
-# paramiko>=2.7.2           # Para conexiones SSH
-# cryptography>=3.4.8       # Para encriptación
-# psutil>=5.8.0             # Para información del sistema
-# colorama>=0.4.4           # Para colores en terminal
-# tqdm>=4.62.0              # Para barras de progreso
-
-# Para desarrollo y testing (opcional)
-# pytest>=6.2.4            # Para testing
-# pytest-cov>=2.12.1       # Para cobertura de tests
-# black>=21.6b0             # Para formateo de código
-# flake8>=3.9.2             # Para linting
+# Dependencias opcionales para funcionalidades avanzadas
+requests>=2.25.0

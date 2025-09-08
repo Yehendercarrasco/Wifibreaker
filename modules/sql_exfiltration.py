@@ -8,7 +8,10 @@ import subprocess
 import json
 import time
 import os
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 import socket
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -462,6 +465,8 @@ class SQLExfiltrationModule:
                 test_url = f"{url}?{param}={payload}"
                 
                 try:
+                    if not requests:
+                        continue
                     response = requests.get(test_url, timeout=10)
                     
                     # Detectar SQL injection basado en el tipo
@@ -485,7 +490,7 @@ class SQLExfiltrationModule:
             self.logger.debug(f"Error en SQL injection: {e}")
             return {'success': False}
     
-    def _detect_sql_injection(self, response: requests.Response, injection_type: str) -> bool:
+    def _detect_sql_injection(self, response, injection_type: str) -> bool:
         """Detectar si la respuesta indica SQL injection exitoso"""
         response_text = response.text.lower()
         

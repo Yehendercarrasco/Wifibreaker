@@ -21,25 +21,6 @@ class MenuSystem:
         
         # Sistema de logging unificado
         self.unified_logging = UnifiedLoggingSystem(config, logger)
-        self.log_metadata = self._load_log_metadata()
-    
-    def _load_log_metadata(self) -> Dict[str, Any]:
-        """Cargar metadatos de logs existentes"""
-        if self.log_metadata_file.exists():
-            try:
-                with open(self.log_metadata_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                self.logger.error(f"Error cargando metadatos de logs: {e}")
-        return {"logs": {}, "next_id": 1}
-    
-    def _save_log_metadata(self):
-        """Guardar metadatos de logs"""
-        try:
-            with open(self.log_metadata_file, 'w', encoding='utf-8') as f:
-                json.dump(self.log_metadata, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            self.logger.error(f"Error guardando metadatos de logs: {e}")
     
     def clear_screen(self):
         """Limpiar pantalla"""
@@ -250,30 +231,16 @@ class MenuSystem:
                 return default_mote or f"Escaneo_{datetime.now().strftime('%Y%m%d_%H%M')}"
     
     def save_log_metadata(self, log_id: str, mote: str, status: str = "En progreso", phases_completed: List[str] = None):
-        """Guardar metadatos del log"""
-        if phases_completed is None:
-            phases_completed = []
-        
-        self.log_metadata["logs"][log_id] = {
-            "mote": mote,
-            "status": status,
-            "phases_completed": phases_completed,
-            "created": datetime.now().isoformat(),
-            "last_updated": datetime.now().isoformat()
-        }
-        
-        self._save_log_metadata()
+        """Guardar metadatos del log (método de compatibilidad)"""
+        # Este método ya no es necesario con el sistema unificado
+        # Los metadatos se guardan automáticamente en el JSON unificado
+        pass
     
     def update_log_status(self, log_id: str, status: str, phases_completed: List[str] = None):
-        """Actualizar estado del log"""
-        if log_id in self.log_metadata.get("logs", {}):
-            self.log_metadata["logs"][log_id]["status"] = status
-            self.log_metadata["logs"][log_id]["last_updated"] = datetime.now().isoformat()
-            
-            if phases_completed is not None:
-                self.log_metadata["logs"][log_id]["phases_completed"] = phases_completed
-            
-            self._save_log_metadata()
+        """Actualizar estado del log (método de compatibilidad)"""
+        # Este método ya no es necesario con el sistema unificado
+        # Los metadatos se actualizan automáticamente en el JSON unificado
+        pass
     
     def view_logs_menu(self):
         """Menú para ver logs y reportes existentes"""
