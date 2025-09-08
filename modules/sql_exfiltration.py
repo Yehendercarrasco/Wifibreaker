@@ -13,14 +13,16 @@ import socket
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 
 class SQLExfiltrationModule:
     """Módulo de reconocimiento básico de bases de datos SQL"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados de reconocimiento SQL
         self.results = {
@@ -824,11 +826,30 @@ class SQLExfiltrationModule:
             accessible_databases = self.test_default_access(databases)
             
             # 4. Guardar evidencia de reconocimiento
-            self.logging_system.save_json_evidence(
-                'sql_reconnaissance_results.json',
-                self.results,
-                'data'
-            )
+            if self.unified_logging:
+                # Agregar conexiones de base de datos al sistema unificado
+                for db in accessible_databases:
+                    connection_data = {
+                        'type': 'database',
+                        'host': db.get('host', ''),
+                        'port': db.get('port', ''),
+                        'username': db.get('username', ''),
+                        'password': db.get('password', ''),
+                        'method': 'default_credentials',
+                        'established_at': db.get('tested_at', '')
+                    }
+                    self.unified_logging.add_connection(connection_data)
+                
+                # Marcar fase como completada
+                self.unified_logging.mark_phase_completed('sql_exfiltration')
+                self.logger.info("✅ Datos de SQL agregados al sistema unificado")
+            else:
+                # Fallback al sistema anterior
+                self.logging_system.save_json_evidence(
+                    'sql_reconnaissance_results.json',
+                    self.results,
+                    'data'
+                )
             
             end_time = time.time()
             duration = end_time - start_time

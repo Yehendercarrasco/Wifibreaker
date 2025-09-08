@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from modules.logging_system import LoggingSystem, Colors
+from modules.unified_logging import UnifiedLoggingSystem
 
 class MenuSystem:
     """Sistema de menús interactivos para el pentesting"""
@@ -18,12 +19,8 @@ class MenuSystem:
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
         
-        # Directorio de logs (ahora en scans/)
-        self.logs_dir = Path("scans")
-        self.logs_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Archivo de metadatos de logs
-        self.log_metadata_file = self.logs_dir / "log_metadata.json"
+        # Sistema de logging unificado
+        self.unified_logging = UnifiedLoggingSystem(config, logger)
         self.log_metadata = self._load_log_metadata()
     
     def _load_log_metadata(self) -> Dict[str, Any]:
@@ -215,44 +212,8 @@ class MenuSystem:
         """Obtener lista de escaneos disponibles (logs)"""
         logs = []
         
-        # Buscar directorios de escaneos
-        for scan_dir in self.logs_dir.iterdir():
-            if not scan_dir.is_dir():
-                continue
-                
-            # Buscar archivo de información del escaneo
-            scan_info_file = scan_dir / "scan_info.json"
-            if not scan_info_file.exists():
-                continue
-                
-            try:
-                with open(scan_info_file, 'r', encoding='utf-8') as f:
-                    scan_info = json.load(f)
-                
-                # Obtener información del directorio
-                stat = scan_dir.stat()
-                date = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                
-                log_info = {
-                    'filename': str(scan_dir),  # Ahora es un directorio
-                    'scan_id': scan_info.get('scan_id', scan_dir.name),
-                    'mote': scan_info.get('mote', f'Escaneo_{scan_dir.name}'),
-                    'date': scan_info.get('created_at', date),
-                    'status': scan_info.get('status', 'Incompleto'),
-                    'phases_completed': scan_info.get('phases_completed', []),
-                    'size': sum(f.stat().st_size for f in scan_dir.rglob('*') if f.is_file()),
-                    'is_cold_pentest': scan_info.get('is_cold_pentest', False)
-                }
-                
-                logs.append(log_info)
-                
-            except Exception as e:
-                print(f"Error leyendo {scan_info_file}: {e}")
-                continue
-        
-        # Ordenar por fecha (más reciente primero)
-        logs.sort(key=lambda x: x['date'], reverse=True)
-        return logs
+        # Usar sistema de logging unificado
+        return self.unified_logging.get_all_scans()
     
     def get_log_mote(self, default_mote: str = None) -> str:
         """Obtener mote personalizado para el log"""
@@ -330,10 +291,10 @@ class MenuSystem:
         
         for i, log_info in enumerate(logs, 1):
             mote = log_info.get('mote', 'Sin mote')
-            date = log_info.get('date', 'Fecha desconocida')
+            date = log_info.get('created_at', 'Fecha desconocida')
             status = log_info.get('status', 'Desconocido')
             phases = log_info.get('phases_completed', [])
-            size = log_info.get('size', 0)
+            size = 0  # Se calculará desde el directorio
             scan_id = log_info.get('scan_id', 'N/A')
             is_cold = log_info.get('is_cold_pentest', False)
             

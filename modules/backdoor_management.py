@@ -12,14 +12,16 @@ import requests
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 
 class BackdoorManagementModule:
     """Módulo de gestión de backdoors y accesos remotos"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
+        self.unified_logging = unified_logging
         
         # Directorio de evidencia (ahora en scans/)
         self.evidence_dir = Path("scans/backdoor_management")
@@ -324,13 +326,47 @@ class BackdoorManagementModule:
             if not scan_dir.is_dir():
                 continue
                 
-            # Buscar evidencia de persistencia en cada escaneo
+            # Buscar archivo de datos unificados
+            scan_data_file = scan_dir / "scan_data.json"
+            if scan_data_file.exists():
+                try:
+                    with open(scan_data_file, 'r', encoding='utf-8') as f:
+                        scan_data = json.load(f)
+                    
+                    # Extraer backdoors del sistema unificado
+                    persistence_data = scan_data.get("persistence", {})
+                    if "backdoors" in persistence_data:
+                        backdoors.extend(persistence_data["backdoors"])
+                    
+                    # Extraer conexiones que pueden ser backdoors
+                    connections_data = scan_data.get("connections", {})
+                    for conn_type, connections in connections_data.items():
+                        for conn in connections:
+                            if conn.get("status") == "active":
+                                backdoor_info = {
+                                    "id": f"conn_{conn_type}_{len(backdoors)}",
+                                    "type": f"{conn_type}_connection",
+                                    "host": conn.get("host", ""),
+                                    "port": conn.get("port", ""),
+                                    "username": conn.get("username", ""),
+                                    "password": conn.get("password", ""),
+                                    "access_script": f"{conn_type} {conn.get('username', '')}@{conn.get('host', '')}:{conn.get('port', '')}",
+                                    "created_at": conn.get("established_at", ""),
+                                    "status": "active"
+                                }
+                                backdoors.append(backdoor_info)
+                
+                except Exception as e:
+                    self.logger.error(f"Error leyendo {scan_data_file}: {e}")
+                    continue
+            
+            # Fallback: buscar evidencia de persistencia en cada escaneo (sistema anterior)
             persistence_evidence = scan_dir / "evidence" / "persistence.json"
             if persistence_evidence.exists():
                 evidence_backdoors = self._parse_evidence_file(str(persistence_evidence))
                 backdoors.extend(evidence_backdoors)
             
-            # Buscar evidencia de IoT en cada escaneo
+            # Fallback: buscar evidencia de IoT en cada escaneo (sistema anterior)
             iot_evidence = scan_dir / "evidence" / "iot_exploitation.json"
             if iot_evidence.exists():
                 evidence_backdoors = self._parse_evidence_file(str(iot_evidence))

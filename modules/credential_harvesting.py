@@ -14,17 +14,19 @@ from pathlib import Path
 import re
 from modules.logging_system import LoggingSystem
 from modules.clean_console import CleanConsole
+from modules.unified_logging import UnifiedLoggingSystem
 
 class CredentialModule:
     """Módulo de recolección de credenciales"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.credentials_config = config['credentials']
         self.network_config = config['network_config']
         self.logging_system = LoggingSystem(config, logger)
         self.clean_console = CleanConsole(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados de recolección de credenciales
         self.results = {
@@ -815,11 +817,24 @@ class CredentialModule:
                 self.stop_traffic_sniffing()
             
             # 8. Guardar evidencia
-            self.logging_system.save_json_evidence(
-                'credential_harvesting_results.json',
-                self.results,
-                'data'
-            )
+            if self.unified_logging:
+                # Agregar credenciales al sistema unificado
+                for cred in self.results.get('valid_credentials', []):
+                    self.unified_logging.add_credentials([cred], "captured")
+                
+                for cred in self.results.get('captured_hashes', []):
+                    self.unified_logging.add_credentials([cred], "cracked")
+                
+                # Marcar fase como completada
+                self.unified_logging.mark_phase_completed('credential_harvesting')
+                self.logger.info("✅ Credenciales agregadas al sistema unificado")
+            else:
+                # Fallback al sistema anterior
+                self.logging_system.save_json_evidence(
+                    'credential_harvesting_results.json',
+                    self.results,
+                    'data'
+                )
             
             end_time = time.time()
             duration = end_time - start_time

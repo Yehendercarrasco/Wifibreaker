@@ -13,17 +13,19 @@ import hashlib
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 from modules.permission_system import PermissionSystem
 
 class ExfiltrationModule:
     """Módulo de exfiltración de datos"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.exfiltration_config = config['exfiltration']
         self.logging_system = LoggingSystem(config, logger)
         self.permission_system = PermissionSystem(logger)
+        self.unified_logging = unified_logging
         
         # Resultados de exfiltración
         self.results = {
@@ -1010,11 +1012,25 @@ class ExfiltrationModule:
                     self.results['connectivity_results'] = connectivity_results
             
             # Guardar evidencia
-            self.logging_system.save_json_evidence(
-                'exfiltration_results.json',
-                self.results,
-                'data'
-            )
+            if self.unified_logging:
+                # Agregar datos de exfiltración al sistema unificado
+                exfiltration_data = {
+                    'size': self.results.get('data_size', 0),
+                    'files_count': len(self.results.get('exfiltrated_data', [])),
+                    'sensitive_data': self.results.get('exfiltrated_data', [])
+                }
+                self.unified_logging.add_exfiltration_data(exfiltration_data)
+                
+                # Marcar fase como completada
+                self.unified_logging.mark_phase_completed('exfiltration')
+                self.logger.info("✅ Datos de exfiltración agregados al sistema unificado")
+            else:
+                # Fallback al sistema anterior
+                self.logging_system.save_json_evidence(
+                    'exfiltration_results.json',
+                    self.results,
+                    'data'
+                )
             
             end_time = time.time()
             duration = end_time - start_time

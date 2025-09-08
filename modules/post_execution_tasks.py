@@ -9,15 +9,17 @@ import time
 import threading
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from modules.logging_system import LoggingSystem, Colors
+from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem, Colors
 
 class PostExecutionTasksModule:
     """Módulo de tareas post-ejecución para procedimientos extensos"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.logging_system = LoggingSystem(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados de tareas post-ejecución
         self.results = {

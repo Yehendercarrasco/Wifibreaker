@@ -1,0 +1,9 @@
+# Archivo de ejemplo - Documentos exfiltrados
+# Este archivo simula documentos extraídos del sistema comprometido
+# En un escaneo real, aquí estarían los archivos reales exfiltrados
+
+Contenido simulado de documentos exfiltrados:
+- Documentos de la empresa
+- Información financiera
+- Datos de clientes
+- Configuraciones del sistema

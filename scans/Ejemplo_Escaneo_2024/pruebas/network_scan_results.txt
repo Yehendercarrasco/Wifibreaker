@@ -1,0 +1,26 @@
+# Resultados de escaneo de red
+# Este archivo simula los resultados de un escaneo de red
+
+Escaneo realizado el: 2024-12-09 20:15:00
+Red objetivo: 192.168.1.0/24
+
+Hosts descubiertos:
+192.168.1.1 - router.local (TP-Link Archer C7)
+  Puertos abiertos: 80, 23, 443
+  Servicios: HTTP, Telnet, HTTPS
+
+192.168.1.10 - server.local (Windows Server 2019)
+  Puertos abiertos: 22, 80, 135, 139, 445, 3389, 3306
+  Servicios: SSH, HTTP, RPC, NetBIOS, SMB, RDP, MySQL
+
+192.168.1.15 - workstation.local (Windows 10)
+  Puertos abiertos: 135, 139, 445, 3389
+  Servicios: RPC, NetBIOS, SMB, RDP
+
+192.168.1.20 - camera.local (Hikvision DS-2CD2142FWD-I)
+  Puertos abiertos: 80, 554
+  Servicios: HTTP, RTSP
+
+192.168.1.25 - smart-tv.local (Samsung UN55TU8000)
+  Puertos abiertos: 80, 8080
+  Servicios: HTTP, HTTP-Alt

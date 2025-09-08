@@ -12,16 +12,18 @@ from pathlib import Path
 import ipaddress
 import re
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 
 class AdvancedReconnaissanceModule:
     """Módulo de reconocimiento avanzado de red y sistemas"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.network_config = config['network_config']
         self.targets_config = config['targets']
         self.logging_system = LoggingSystem(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados del reconocimiento avanzado
         self.results = {
@@ -628,9 +630,17 @@ class AdvancedReconnaissanceModule:
     
     def _save_evidence(self) -> None:
         """Guardar evidencia del reconocimiento avanzado"""
-        evidence_file = self.evidence_dir / "advanced_reconnaissance_results.json"
-        
-        with open(evidence_file, 'w') as f:
-            json.dump(self.results, f, indent=2, default=str)
-        
-        self.logger.info(f"✅ Evidencia guardada en: {evidence_file}")
+        if self.unified_logging:
+            # Agregar datos al sistema unificado
+            for host in self.results.get('hosts', []):
+                self.unified_logging.add_network_discovery([host])
+            
+            # Marcar fase como completada
+            self.unified_logging.mark_phase_completed('advanced_reconnaissance')
+            self.logger.info("✅ Datos agregados al sistema unificado")
+        else:
+            # Fallback al sistema anterior
+            evidence_file = self.evidence_dir / "advanced_reconnaissance_results.json"
+            with open(evidence_file, 'w') as f:
+                json.dump(self.results, f, indent=2, default=str)
+            self.logger.info(f"✅ Evidencia guardada en: {evidence_file}")

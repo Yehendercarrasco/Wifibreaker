@@ -10,15 +10,17 @@ import os
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 
 class PersistenceModule:
     """Módulo de persistencia y ocultación"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.persistence_config = config['persistence']
         self.logging_system = LoggingSystem(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados de persistencia
         self.results = {
@@ -605,11 +607,25 @@ class PersistenceModule:
             persistent_connections = self.establish_persistent_connections(compromised_systems)
             
             # 6. Guardar evidencia
-            self.logging_system.save_json_evidence(
-                'persistence_results.json',
-                self.results,
-                'data'
-            )
+            if self.unified_logging:
+                # Agregar datos de persistencia al sistema unificado
+                persistence_data = {
+                    'backdoors': self.results.get('backdoors', []),
+                    'users_created': [],  # Se llenará con usuarios creados
+                    'services': self.results.get('service_installations', [])
+                }
+                self.unified_logging.add_persistence(persistence_data)
+                
+                # Marcar fase como completada
+                self.unified_logging.mark_phase_completed('persistence')
+                self.logger.info("✅ Datos de persistencia agregados al sistema unificado")
+            else:
+                # Fallback al sistema anterior
+                self.logging_system.save_json_evidence(
+                    'persistence_results.json',
+                    self.results,
+                    'data'
+                )
             
             end_time = time.time()
             duration = end_time - start_time

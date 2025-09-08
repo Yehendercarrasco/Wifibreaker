@@ -1,0 +1,429 @@
+{
+  "metadata": {
+    "scan_id": "pentest_20241209_201500",
+    "mote": "Ejemplo_Escaneo_2024",
+    "created_at": "2024-12-09T20:15:00",
+    "completed_at": "2024-12-09T22:30:00",
+    "is_cold_pentest": false,
+    "target_network": "192.168.1.0/24",
+    "status": "completed"
+  },
+  "network_map": {
+    "public_ips": [
+      {
+        "ip": "203.0.113.45",
+        "hostname": "gateway.example.com",
+        "os": "Linux",
+        "services": ["ssh", "http", "https"],
+        "ports": [22, 80, 443],
+        "vendor": "Ubuntu",
+        "discovered_at": "2024-12-09T20:20:00"
+      }
+    ],
+    "private_ips": [
+      {
+        "ip": "192.168.1.1",
+        "hostname": "router.local",
+        "os": "Embedded Linux",
+        "services": ["http", "telnet"],
+        "ports": [80, 23],
+        "vendor": "TP-Link",
+        "discovered_at": "2024-12-09T20:18:00"
+      },
+      {
+        "ip": "192.168.1.10",
+        "hostname": "server.local",
+        "os": "Windows Server 2019",
+        "services": ["rdp", "smb", "http"],
+        "ports": [3389, 445, 80],
+        "vendor": "Microsoft",
+        "discovered_at": "2024-12-09T20:19:00"
+      }
+    ],
+    "devices": [
+      {
+        "ip": "192.168.1.1",
+        "hostname": "router.local",
+        "os": "Embedded Linux",
+        "services": ["http", "telnet"],
+        "ports": [80, 23],
+        "vendor": "TP-Link",
+        "discovered_at": "2024-12-09T20:18:00"
+      },
+      {
+        "ip": "192.168.1.10",
+        "hostname": "server.local",
+        "os": "Windows Server 2019",
+        "services": ["rdp", "smb", "http"],
+        "ports": [3389, 445, 80],
+        "vendor": "Microsoft",
+        "discovered_at": "2024-12-09T20:19:00"
+      },
+      {
+        "ip": "192.168.1.15",
+        "hostname": "workstation.local",
+        "os": "Windows 10",
+        "services": ["rdp", "smb"],
+        "ports": [3389, 445],
+        "vendor": "Microsoft",
+        "discovered_at": "2024-12-09T20:21:00"
+      },
+      {
+        "ip": "192.168.1.20",
+        "hostname": "camera.local",
+        "os": "Embedded Linux",
+        "services": ["http", "rtsp"],
+        "ports": [80, 554],
+        "vendor": "Hikvision",
+        "discovered_at": "2024-12-09T20:22:00"
+      }
+    ],
+    "topology": {}
+  },
+  "credentials": {
+    "captured_passwords": [
+      {
+        "username": "admin",
+        "password": "admin123",
+        "hash": "",
+        "target": "192.168.1.1",
+        "service": "http",
+        "method": "default_credentials",
+        "captured_at": "2024-12-09T20:25:00"
+      },
+      {
+        "username": "administrator",
+        "password": "Password123!",
+        "hash": "",
+        "target": "192.168.1.10",
+        "service": "rdp",
+        "method": "brute_force",
+        "captured_at": "2024-12-09T20:35:00"
+      },
+      {
+        "username": "user",
+        "password": "user123",
+        "hash": "",
+        "target": "192.168.1.15",
+        "service": "smb",
+        "method": "password_spray",
+        "captured_at": "2024-12-09T20:40:00"
+      }
+    ],
+    "default_credentials": [
+      {
+        "username": "admin",
+        "password": "admin",
+        "hash": "",
+        "target": "192.168.1.20",
+        "service": "http",
+        "method": "default_credentials",
+        "captured_at": "2024-12-09T20:30:00"
+      }
+    ],
+    "cracked_hashes": [
+      {
+        "username": "service_account",
+        "password": "ServicePass2024!",
+        "hash": "5d41402abc4b2a76b9719d911017c592",
+        "target": "192.168.1.10",
+        "service": "smb",
+        "method": "hash_cracking",
+        "captured_at": "2024-12-09T20:45:00"
+      }
+    ]
+  },
+  "persistence": {
+    "backdoors": [
+      {
+        "id": "backdoor_001",
+        "type": "ssh_backdoor",
+        "host": "192.168.1.10",
+        "port": 2222,
+        "username": "backdoor_user",
+        "password": "BackdoorPass123!",
+        "access_script": "ssh -p 2222 backdoor_user@192.168.1.10",
+        "created_at": "2024-12-09T21:00:00",
+        "status": "active"
+      },
+      {
+        "id": "backdoor_002",
+        "type": "web_shell",
+        "host": "192.168.1.10",
+        "port": 80,
+        "username": "",
+        "password": "",
+        "access_script": "http://192.168.1.10/shell.php?cmd=whoami",
+        "created_at": "2024-12-09T21:05:00",
+        "status": "active"
+      }
+    ],
+    "users_created": [
+      {
+        "username": "backdoor_user",
+        "password": "BackdoorPass123!",
+        "host": "192.168.1.10",
+        "groups": ["Administrators", "Remote Desktop Users"],
+        "created_at": "2024-12-09T21:00:00"
+      },
+      {
+        "username": "maintenance_user",
+        "password": "Maintenance2024!",
+        "host": "192.168.1.15",
+        "groups": ["Users"],
+        "created_at": "2024-12-09T21:10:00"
+      }
+    ],
+    "services_installed": [
+      {
+        "name": "SSH_Backdoor_Service",
+        "host": "192.168.1.10",
+        "port": 2222,
+        "command": "C:\\backdoor\\ssh_service.exe",
+        "created_at": "2024-12-09T21:00:00"
+      },
+      {
+        "name": "Remote_Monitoring",
+        "host": "192.168.1.15",
+        "port": 8080,
+        "command": "C:\\monitoring\\monitor.exe",
+        "created_at": "2024-12-09T21:10:00"
+      }
+    ],
+    "scheduled_tasks": [
+      {
+        "name": "System_Update_Task",
+        "host": "192.168.1.10",
+        "command": "C:\\updates\\update.exe",
+        "schedule": "Daily at 2:00 AM",
+        "created_at": "2024-12-09T21:15:00"
+      }
+    ],
+    "registry_modifications": [
+      {
+        "host": "192.168.1.10",
+        "key": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "value": "SSH_Backdoor_Service",
+        "data": "C:\\backdoor\\ssh_service.exe",
+        "created_at": "2024-12-09T21:00:00"
+      }
+    ]
+  },
+  "connections": {
+    "ssh_access": [
+      {
+        "type": "ssh",
+        "host": "192.168.1.10",
+        "port": 2222,
+        "username": "backdoor_user",
+        "password": "BackdoorPass123!",
+        "method": "backdoor",
+        "established_at": "2024-12-09T21:00:00",
+        "status": "active"
+      }
+    ],
+    "rdp_access": [
+      {
+        "type": "rdp",
+        "host": "192.168.1.10",
+        "port": 3389,
+        "username": "administrator",
+        "password": "Password123!",
+        "method": "credential_harvesting",
+        "established_at": "2024-12-09T20:35:00",
+        "status": "active"
+      },
+      {
+        "type": "rdp",
+        "host": "192.168.1.15",
+        "port": 3389,
+        "username": "user",
+        "password": "user123",
+        "method": "password_spray",
+        "established_at": "2024-12-09T20:40:00",
+        "status": "active"
+      }
+    ],
+    "smb_access": [
+      {
+        "type": "smb",
+        "host": "192.168.1.10",
+        "port": 445,
+        "username": "service_account",
+        "password": "ServicePass2024!",
+        "method": "hash_cracking",
+        "established_at": "2024-12-09T20:45:00",
+        "status": "active"
+      }
+    ],
+    "database_connections": [
+      {
+        "type": "mysql",
+        "host": "192.168.1.10",
+        "port": 3306,
+        "username": "root",
+        "password": "root123",
+        "method": "default_credentials",
+        "established_at": "2024-12-09T20:50:00",
+        "status": "active"
+      }
+    ],
+    "remote_access": []
+  },
+  "compromised_systems": {
+    "lateral_movement": [
+      {
+        "host": "192.168.1.10",
+        "ip": "192.168.1.10",
+        "os": "Windows Server 2019",
+        "username": "administrator",
+        "password": "Password123!",
+        "privileges": "Administrator",
+        "compromise_method": "rdp_brute_force",
+        "compromised_at": "2024-12-09T20:35:00",
+        "status": "compromised"
+      },
+      {
+        "host": "192.168.1.15",
+        "ip": "192.168.1.15",
+        "os": "Windows 10",
+        "username": "user",
+        "password": "user123",
+        "privileges": "User",
+        "compromise_method": "password_spray",
+        "compromised_at": "2024-12-09T20:40:00",
+        "status": "compromised"
+      }
+    ],
+    "privilege_escalation": [
+      {
+        "host": "192.168.1.15",
+        "method": "local_exploit",
+        "from_privileges": "User",
+        "to_privileges": "Administrator",
+        "exploit_used": "CVE-2021-34527",
+        "escalated_at": "2024-12-09T20:45:00"
+      }
+    ],
+    "exploited_vulnerabilities": [
+      {
+        "host": "192.168.1.10",
+        "cve": "CVE-2021-34527",
+        "description": "Windows Print Spooler Remote Code Execution",
+        "severity": "Critical",
+        "exploited_at": "2024-12-09T20:30:00"
+      }
+    ]
+  },
+  "iot_devices": {
+    "cameras": [
+      {
+        "ip": "192.168.1.20",
+        "type": "IP Camera",
+        "vendor": "Hikvision",
+        "model": "DS-2CD2142FWD-I",
+        "username": "admin",
+        "password": "admin",
+        "access_method": "default_credentials",
+        "compromised_at": "2024-12-09T20:30:00",
+        "status": "compromised"
+      }
+    ],
+    "routers": [
+      {
+        "ip": "192.168.1.1",
+        "type": "Wireless Router",
+        "vendor": "TP-Link",
+        "model": "Archer C7",
+        "username": "admin",
+        "password": "admin123",
+        "access_method": "default_credentials",
+        "compromised_at": "2024-12-09T20:25:00",
+        "status": "compromised"
+      }
+    ],
+    "other_devices": [
+      {
+        "ip": "192.168.1.25",
+        "type": "Smart TV",
+        "vendor": "Samsung",
+        "model": "UN55TU8000",
+        "username": "",
+        "password": "",
+        "access_method": "network_discovery",
+        "compromised_at": "2024-12-09T20:35:00",
+        "status": "discovered"
+      }
+    ]
+  },
+  "exfiltration": {
+    "data_size": 15728640,
+    "files_count": 45,
+    "sensitive_data": [
+      {
+        "type": "Documents",
+        "location": "C:\\Users\\Documents\\",
+        "size": 10485760,
+        "exfiltrated_at": "2024-12-09T21:20:00"
+      },
+      {
+        "type": "Database Dump",
+        "location": "C:\\ProgramData\\MySQL\\data\\",
+        "size": 5242880,
+        "exfiltrated_at": "2024-12-09T21:25:00"
+      }
+    ]
+  },
+  "server_configs": {
+    "backdoor_servers": [
+      {
+        "type": "SSH Backdoor Server",
+        "host": "192.168.1.10",
+        "port": 2222,
+        "protocol": "SSH",
+        "credentials": {
+          "username": "backdoor_user",
+          "password": "BackdoorPass123!"
+        },
+        "configured_at": "2024-12-09T21:00:00"
+      }
+    ],
+    "exfiltration_servers": [
+      {
+        "type": "FTP Exfiltration Server",
+        "host": "203.0.113.100",
+        "port": 21,
+        "protocol": "FTP",
+        "credentials": {
+          "username": "exfil_user",
+          "password": "ExfilPass2024!"
+        },
+        "configured_at": "2024-12-09T21:15:00"
+      }
+    ],
+    "c2_servers": [
+      {
+        "type": "HTTP C2 Server",
+        "host": "203.0.113.200",
+        "port": 443,
+        "protocol": "HTTPS",
+        "credentials": {
+          "username": "c2_user",
+          "password": "C2Pass2024!"
+        },
+        "configured_at": "2024-12-09T21:10:00"
+      }
+    ]
+  },
+  "phases_completed": [
+    "reconnaissance",
+    "advanced_reconnaissance",
+    "credential_harvesting",
+    "lateral_movement",
+    "persistence",
+    "privilege_escalation",
+    "exfiltration",
+    "iot_exploitation"
+  ],
+  "timestamp": 1702155000.0
+}

@@ -26,8 +26,8 @@ class PentestReportHandler(BaseHTTPRequestHandler):
         path = parsed_path.path
         
         try:
-            if path == '/':
-                self.serve_file('index.html')
+        if path == '/':
+            self.serve_file('unified_index.html')
             elif path.startswith('/api/'):
                 self.handle_api_request(path)
             elif path.startswith('/static/'):
@@ -60,14 +60,16 @@ class PentestReportHandler(BaseHTTPRequestHandler):
             # Buscar directorios de escaneos
             for scan_dir in self.scans_dir.iterdir():
                 if scan_dir.is_dir():
-                    scan_info_file = scan_dir / "scan_info.json"
-                    if scan_info_file.exists():
+                    scan_data_file = scan_dir / "scan_data.json"
+                    if scan_data_file.exists():
                         try:
-                            with open(scan_info_file, 'r', encoding='utf-8') as f:
-                                scan_info = json.load(f)
-                                scans.append(scan_info)
+                            with open(scan_data_file, 'r', encoding='utf-8') as f:
+                                scan_data = json.load(f)
+                                # Obtener metadatos del escaneo
+                                metadata = scan_data.get('metadata', {})
+                                scans.append(metadata)
                         except Exception as e:
-                            print(f"Error leyendo {scan_info_file}: {e}")
+                            print(f"Error leyendo {scan_data_file}: {e}")
                             continue
             
             # Ordenar por fecha de creación (más recientes primero)
@@ -88,66 +90,22 @@ class PentestReportHandler(BaseHTTPRequestHandler):
                 self.send_error(404, "Escaneo no encontrado")
                 return
             
-            # Cargar información básica del escaneo
-            scan_info_file = scan_dir / "scan_info.json"
-            if not scan_info_file.exists():
-                self.send_error(404, "Información del escaneo no encontrada")
+            # Cargar datos unificados del escaneo
+            scan_data_file = scan_dir / "scan_data.json"
+            if not scan_data_file.exists():
+                self.send_error(404, "Datos del escaneo no encontrados")
                 return
             
-            with open(scan_info_file, 'r', encoding='utf-8') as f:
-                scan_info = json.load(f)
+            with open(scan_data_file, 'r', encoding='utf-8') as f:
+                scan_data = json.load(f)
             
-            # Cargar reporte final si existe
-            report_file = scan_dir / "reports" / "final_report.json"
-            if report_file.exists():
-                try:
-                    with open(report_file, 'r', encoding='utf-8') as f:
-                        report_data = json.load(f)
-                        scan_info['results'] = report_data
-                except Exception as e:
-                    print(f"Error leyendo reporte final: {e}")
+            # Preparar respuesta con datos unificados
+            response_data = {
+                "scan_info": scan_data.get("metadata", {}),
+                "scan_data": scan_data
+            }
             
-            # Cargar evidencia de fases específicas
-            evidence_dir = scan_dir / "evidence"
-            if evidence_dir.exists():
-                for phase_file in evidence_dir.glob("*.json"):
-                    try:
-                        phase_name = phase_file.stem
-                        with open(phase_file, 'r', encoding='utf-8') as f:
-                            phase_data = json.load(f)
-                            if 'results' not in scan_info:
-                                scan_info['results'] = {}
-                            scan_info['results'][phase_name] = phase_data
-                    except Exception as e:
-                        print(f"Error leyendo evidencia {phase_file}: {e}")
-            
-            # Cargar datos de reconocimiento SQL si existen
-            sql_recon_dir = self.base_dir / "scans" / "sql_reconnaissance"
-            if sql_recon_dir.exists():
-                sql_data = {}
-                for sql_file in sql_recon_dir.glob("*.json"):
-                    try:
-                        with open(sql_file, 'r', encoding='utf-8') as f:
-                            sql_data[sql_file.stem] = json.load(f)
-                    except Exception as e:
-                        print(f"Error leyendo datos SQL {sql_file}: {e}")
-                        continue
-                scan_info['sql_reconnaissance'] = sql_data
-            
-            # Cargar datos de tareas post-ejecución si existen
-            post_exec_dir = self.base_dir / "scans" / "post_execution"
-            if post_exec_dir.exists():
-                post_exec_data = {}
-                for post_exec_file in post_exec_dir.glob("*.json"):
-                    try:
-                        with open(post_exec_file, 'r', encoding='utf-8') as f:
-                            post_exec_data[post_exec_file.stem] = json.load(f)
-                    except Exception as e:
-                        print(f"Error leyendo datos post-ejecución {post_exec_file}: {e}")
-                        continue
-                scan_info['post_execution'] = post_exec_data
-            
-            self.send_json_response(scan_info)
+            self.send_json_response(response_data)
             
         except Exception as e:
             print(f"Error obteniendo detalles del escaneo {scan_id}: {e}")

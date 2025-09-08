@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pentest Report Viewer - Sistema Unificado</title>
+    <link rel="stylesheet" href="static/css/unified_style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> Pentest Report Viewer</h1>
+                <p>Sistema Unificado de Reportes de Penetración</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Scans List Section -->
+            <section id="scansList" class="scans-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Escaneos Disponibles</h2>
+                    <button class="refresh-btn" onclick="loadScans()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+                <div id="scansList" class="scans-container">
+                    <!-- Los escaneos se cargarán aquí dinámicamente -->
+                </div>
+            </section>
+
+            <!-- Scan Details Section -->
+            <section id="scanDetails" class="scan-details-section" style="display: none;">
+                <div id="scanDetails" class="scan-details-container">
+                    <!-- Los detalles del escaneo se cargarán aquí dinámicamente -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 Pentest Report Viewer - Sistema Unificado</p>
+                <p>Desarrollado para análisis de penetración profesional</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="static/js/unified_app.js"></script>
+</body>
+</html>

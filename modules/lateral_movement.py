@@ -13,18 +13,20 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
 from modules.logging_system import LoggingSystem
+from modules.unified_logging import UnifiedLoggingSystem
 from modules.clean_console import CleanConsole
 
 class LateralMovementModule:
     """Módulo de movimiento lateral en la red"""
     
-    def __init__(self, config: Dict[str, Any], logger):
+    def __init__(self, config: Dict[str, Any], logger, unified_logging=None):
         self.config = config
         self.logger = logger
         self.targets_config = config['targets']
         self.exploitation_config = config['exploitation']
         self.logging_system = LoggingSystem(config, logger)
         self.clean_console = CleanConsole(config, logger)
+        self.unified_logging = unified_logging
         
         # Resultados del movimiento lateral
         self.results = {
@@ -880,11 +882,25 @@ class LateralMovementModule:
             metasploit_sessions = self.list_metasploit_sessions()
             
             # 9. Guardar evidencia
-            self.logging_system.save_json_evidence(
-                'lateral_movement_results.json',
-                self.results,
-                'data'
-            )
+            if self.unified_logging:
+                # Agregar sistemas comprometidos al sistema unificado
+                for system in self.results.get('compromised_systems', []):
+                    self.unified_logging.add_compromised_system(system)
+                
+                # Agregar conexiones establecidas
+                for connection in self.results.get('smb_access', []):
+                    self.unified_logging.add_connection(connection)
+                
+                # Marcar fase como completada
+                self.unified_logging.mark_phase_completed('lateral_movement')
+                self.logger.info("✅ Datos de movimiento lateral agregados al sistema unificado")
+            else:
+                # Fallback al sistema anterior
+                self.logging_system.save_json_evidence(
+                    'lateral_movement_results.json',
+                    self.results,
+                    'data'
+                )
             
             end_time = time.time()
             duration = end_time - start_time
