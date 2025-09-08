@@ -1005,7 +1005,7 @@ pentest-automation/
 │   ├── persistence.py             # Módulo de persistencia
 │   ├── privilege_escalation.py    # Módulo de escalada de privilegios
 │   └── exfiltration.py            # Módulo de exfiltración
-├── evidence/                      # Evidencia recopilada
+├── scans/                         # Evidencia y logs centralizados
 │   ├── logs/                      # Logs estructurados
 │   ├── screenshots/               # Capturas de pantalla
 │   ├── data/                      # Datos recopilados
@@ -1025,8 +1025,8 @@ pentest-automation/
 El sistema genera múltiples tipos de logs:
 
 1. **Log Principal**: `pentest_automation.log`
-2. **Logs Estructurados**: `evidence/logs/structured_events.jsonl`
-3. **Logs por Fase**: `evidence/logs/[fase]_events.jsonl`
+2. **Logs Estructurados**: `scans/logs/structured_events.jsonl`
+3. **Logs por Fase**: `scans/logs/[fase]_events.jsonl`
 
 ### Tipos de Evidencia
 - **Datos de Red**: Información de hosts y servicios

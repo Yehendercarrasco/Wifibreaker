@@ -140,8 +140,8 @@ setup_permissions() {
 create_directories() {
     print_header "Creando Directorios"
     
-    print_message "Creando directorios de evidencia..."
-    mkdir -p evidence/{logs,screenshots,data,credentials,lateral_movement,persistence,privilege_escalation,exfiltration}
+    print_message "Creando directorios de escaneos..."
+    mkdir -p scans/{logs,screenshots,data,credentials,lateral_movement,persistence,privilege_escalation,exfiltration}
     
     print_message "Creando directorios de reportes..."
     mkdir -p reports/phase_reports
