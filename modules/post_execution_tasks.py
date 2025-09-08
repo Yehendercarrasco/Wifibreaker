@@ -10,7 +10,8 @@ import threading
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from modules.logging_system import LoggingSystem
-from modules.unified_logging import UnifiedLoggingSystem, Colors
+from modules.unified_logging import UnifiedLoggingSystem
+from modules.logging_system import Colors
 
 class PostExecutionTasksModule:
     """Módulo de tareas post-ejecución para procedimientos extensos"""
