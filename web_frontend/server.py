@@ -26,8 +26,8 @@ class PentestReportHandler(BaseHTTPRequestHandler):
         path = parsed_path.path
         
         try:
-        if path == '/':
-            self.serve_file('unified_index.html')
+            if path == '/':
+                self.serve_file('unified_index.html')
             elif path.startswith('/api/'):
                 self.handle_api_request(path)
             elif path.startswith('/static/'):
