@@ -37,18 +37,18 @@ def create_example_log():
 """
     
     # Crear directorio de logs si no existe
-    os.makedirs("evidence/logs", exist_ok=True)
+    os.makedirs("scans/logs", exist_ok=True)
     
     # Escribir log de ejemplo
-    with open("evidence/logs/pentest_example.log", "w") as f:
+    with open("scans/logs/pentest_example.log", "w") as f:
         f.write(log_content)
     
-    print("✅ Log de ejemplo creado: evidence/logs/pentest_example.log")
+    print("✅ Log de ejemplo creado: scans/logs/pentest_example.log")
 
 def create_example_evidence():
     """Crear evidencia de ejemplo"""
     # Crear directorio de evidencia
-    os.makedirs("evidence/persistence", exist_ok=True)
+    os.makedirs("scans/persistence", exist_ok=True)
     
     # Evidencia de persistencia
     persistence_evidence = {
@@ -72,11 +72,11 @@ def create_example_evidence():
         ]
     }
     
-    with open("evidence/persistence/persistence_results.json", "w") as f:
+    with open("scans/persistence/persistence_results.json", "w") as f:
         json.dump(persistence_evidence, f, indent=2)
     
     # Evidencia de IoT
-    os.makedirs("evidence/iot_exploitation", exist_ok=True)
+    os.makedirs("scans/iot_exploitation", exist_ok=True)
     
     iot_evidence = {
         "remote_access_established": [
@@ -92,11 +92,11 @@ def create_example_evidence():
         ]
     }
     
-    with open("evidence/iot_exploitation/iot_exploitation_results.json", "w") as f:
+    with open("scans/iot_exploitation/iot_exploitation_results.json", "w") as f:
         json.dump(iot_evidence, f, indent=2)
     
     # Evidencia de SQL
-    os.makedirs("evidence/sql_exfiltration", exist_ok=True)
+    os.makedirs("scans/sql_exfiltration", exist_ok=True)
     
     sql_evidence = {
         "remote_connections": [
@@ -113,10 +113,10 @@ def create_example_evidence():
         ]
     }
     
-    with open("evidence/sql_exfiltration/sql_exfiltration_results.json", "w") as f:
+    with open("scans/sql_exfiltration/sql_exfiltration_results.json", "w") as f:
         json.dump(sql_evidence, f, indent=2)
     
-    print("✅ Evidencia de ejemplo creada en directorios evidence/")
+    print("✅ Evidencia de ejemplo creada en directorios scans/")
 
 def main():
     """Función principal del demo"""
@@ -146,7 +146,7 @@ def main():
     
     # 1. Cargar desde log específico
     logger.info("📂 Fase 1: Cargando backdoors desde log específico...")
-    log_file = "evidence/logs/pentest_example.log"
+    log_file = "scans/logs/pentest_example.log"
     backdoors_from_log = backdoor_module.discover_existing_backdoors(log_file)
     
     logger.info(f"✅ Cargados {len(backdoors_from_log)} backdoors desde log")
@@ -155,7 +155,7 @@ def main():
     
     # 2. Cargar desde evidencia de persistencia
     logger.info("📂 Fase 2: Cargando backdoors desde evidencia de persistencia...")
-    persistence_file = "evidence/persistence/persistence_results.json"
+    persistence_file = "scans/persistence/persistence_results.json"
     backdoors_from_persistence = backdoor_module.discover_existing_backdoors(persistence_file)
     
     logger.info(f"✅ Cargados {len(backdoors_from_persistence)} backdoors desde evidencia de persistencia")
@@ -164,7 +164,7 @@ def main():
     
     # 3. Cargar desde evidencia de IoT
     logger.info("📂 Fase 3: Cargando accesos desde evidencia de IoT...")
-    iot_file = "evidence/iot_exploitation/iot_exploitation_results.json"
+    iot_file = "scans/iot_exploitation/iot_exploitation_results.json"
     backdoors_from_iot = backdoor_module.discover_existing_backdoors(iot_file)
     
     logger.info(f"✅ Cargados {len(backdoors_from_iot)} accesos desde evidencia de IoT")
@@ -173,7 +173,7 @@ def main():
     
     # 4. Cargar desde evidencia de SQL
     logger.info("📂 Fase 4: Cargando conexiones desde evidencia de SQL...")
-    sql_file = "evidence/sql_exfiltration/sql_exfiltration_results.json"
+    sql_file = "scans/sql_exfiltration/sql_exfiltration_results.json"
     backdoors_from_sql = backdoor_module.discover_existing_backdoors(sql_file)
     
     logger.info(f"✅ Cargados {len(backdoors_from_sql)} conexiones desde evidencia de SQL")
